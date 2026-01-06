@@ -62,17 +62,24 @@
     .results h2{font-family:'Instrument Serif',serif;font-size:2rem;font-weight:400;margin-bottom:.4rem}
     .results-subtitle{color:var(--text-secondary);margin-bottom:1.5rem}
     
-    /* Bar Chart Styles */
+    /* Stacked Bar Chart Styles */
     .chart-container{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1.5rem;text-align:left}
     .chart-title{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:1rem}
-    .chart-item{margin-bottom:1rem}
-    .chart-item:last-child{margin-bottom:0}
-    .chart-item-header{display:flex;justify-content:space-between;margin-bottom:.25rem}
-    .chart-item-name{font-size:.85rem;font-weight:500}
-    .chart-item-price{font-family:'JetBrains Mono',monospace;font-size:.85rem;color:var(--accent)}
-    .chart-bar-bg{background:var(--border);border-radius:4px;height:8px;overflow:hidden}
-    .chart-bar{background:var(--accent);height:100%;border-radius:4px;transition:width .3s ease}
-    .chart-item-detail{display:flex;justify-content:space-between;margin-top:.25rem;font-size:.75rem;color:var(--text-muted)}
+    .chart-total{text-align:center;margin-bottom:1rem}
+    .chart-total-amount{font-family:'JetBrains Mono',monospace;font-size:2rem;font-weight:600;color:var(--text-primary)}
+    .chart-total-amount span{font-size:1rem;color:var(--text-muted);font-weight:400}
+    .chart-total-yearly{font-family:'JetBrains Mono',monospace;font-size:1.1rem;color:var(--accent);font-weight:600}
+    .stacked-bar{display:flex;height:32px;border-radius:8px;overflow:hidden;margin-bottom:1rem}
+    .stacked-segment{height:100%;transition:width .3s ease;position:relative}
+    .stacked-segment:hover{opacity:.85}
+    .chart-legend{display:grid;gap:.5rem}
+    .legend-item{display:flex;align-items:center;justify-content:space-between;padding:.5rem .75rem;background:var(--bg-secondary);border-radius:8px}
+    .legend-left{display:flex;align-items:center;gap:.5rem}
+    .legend-color{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+    .legend-name{font-size:.85rem;font-weight:500}
+    .legend-right{text-align:right}
+    .legend-price{font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:500}
+    .legend-detail{font-size:.7rem;color:var(--text-muted)}
     
     .results-breakdown{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1.5rem;text-align:left}
     .breakdown-row{display:flex;justify-content:space-between;padding:.7rem 0;border-bottom:1px solid var(--border)}
@@ -255,16 +262,45 @@
       if(!selected.length)return;
       const cats={streaming:'📺 Streaming',music:'🎵 Music',software:'💻 Software',delivery:'📦 Delivery',gaming:'🎮 Gaming',fitness:'💪 Fitness',news:'📰 News'};
       const m=selected.reduce((a,s)=>a+s.price,0),y=m*12;
-      const maxPrice=Math.max(...selected.map(s=>s.price));
       
-      // Build bar chart
-      let chartHtml='<div class="chart-title">Your spending breakdown</div>';
-      selected.sort((a,b)=>b.price-a.price).forEach(s=>{
-        const pct=((s.price/m)*100).toFixed(0);
-        const barWidth=((s.price/maxPrice)*100).toFixed(0);
-        const yearly=(s.price*12).toFixed(0);
-        chartHtml+=`<div class="chart-item"><div class="chart-item-header"><span class="chart-item-name">${s.name}</span><span class="chart-item-price">$${s.price.toFixed(2)}/mo</span></div><div class="chart-bar-bg"><div class="chart-bar" style="width:${barWidth}%"></div></div><div class="chart-item-detail"><span>${pct}% of total</span><span>$${yearly}/yr</span></div></div>`;
+      // Color palette for segments
+      const colors=['#d97706','#0891b2','#7c3aed','#dc2626','#16a34a','#db2777','#2563eb','#ca8a04','#64748b','#f97316'];
+      
+      // Build stacked bar chart
+      let chartHtml=`
+        <div class="chart-total">
+          <div class="chart-total-amount">$${m.toFixed(2)}<span>/mo</span></div>
+          <div class="chart-total-yearly">$${Math.round(y).toLocaleString()}/year</div>
+        </div>
+        <div class="stacked-bar">`;
+      
+      // Sort by price descending and build segments
+      const sorted = [...selected].sort((a,b)=>b.price-a.price);
+      sorted.forEach((s,i)=>{
+        const pct=((s.price/m)*100);
+        chartHtml+=`<div class="stacked-segment" style="width:${pct}%;background:${colors[i%colors.length]}" title="${s.name}: $${s.price.toFixed(2)}/mo (${pct.toFixed(0)}%)"></div>`;
       });
+      
+      chartHtml+=`</div><div class="chart-legend">`;
+      
+      // Legend items
+      sorted.forEach((s,i)=>{
+        const pct=((s.price/m)*100).toFixed(0);
+        const yearly=(s.price*12).toFixed(0);
+        chartHtml+=`
+          <div class="legend-item">
+            <div class="legend-left">
+              <div class="legend-color" style="background:${colors[i%colors.length]}"></div>
+              <span class="legend-name">${s.name}</span>
+            </div>
+            <div class="legend-right">
+              <div class="legend-price">$${s.price.toFixed(2)}/mo</div>
+              <div class="legend-detail">${pct}% · $${yearly}/yr</div>
+            </div>
+          </div>`;
+      });
+      
+      chartHtml+=`</div>`;
       chartContainer.innerHTML=chartHtml;
       
       // Build category breakdown
@@ -273,10 +309,14 @@
       breakdownHtml+=`<div class="breakdown-row total"><span class="breakdown-label">Annual Total</span><span class="breakdown-value">$${Math.round(y).toLocaleString()}/yr</span></div>`;
       resultsBreakdown.innerHTML=breakdownHtml;
       
-      // Build renewal date inputs
+      // Build renewal date inputs with validation
+      const today = new Date();
+      const minDate = today.toISOString().split('T')[0];
+      const maxDate = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate()).toISOString().split('T')[0];
+      
       let renewalHtml='';
       selected.forEach((s,i)=>{
-        renewalHtml+=`<div class="renewal-item"><span class="renewal-item-name">${s.name}</span><div class="renewal-item-date"><input type="date" data-index="${i}" placeholder="Renewal date"></div></div>`;
+        renewalHtml+=`<div class="renewal-item"><span class="renewal-item-name">${s.name}</span><div class="renewal-item-date"><input type="date" data-index="${i}" min="${minDate}" max="${maxDate}" placeholder="Renewal date"></div></div>`;
       });
       renewalList.innerHTML=renewalHtml;
       

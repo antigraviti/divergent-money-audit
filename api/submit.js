@@ -41,30 +41,35 @@ export default async function handler(req, res) {
       console.error('Supabase error:', err);
     }
 
-    // Build bar chart for email
-    const maxPrice = Math.max(...subscriptions.map(s => s.price));
-    const subscriptionRows = subscriptions
-      .sort((a, b) => b.price - a.price)
-      .map(s => {
-        const yearlyPrice = s.price * 12;
-        const percentage = ((s.price / monthly_total) * 100).toFixed(0);
-        const barWidth = Math.round((s.price / maxPrice) * 100);
-        const renewalText = s.renewal_date ? ` · Renews ${new Date(s.renewal_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : '';
-        return `
-          <tr>
-            <td style="padding:12px 16px;border-bottom:1px solid #e5e5e5;">
-              <div style="font-weight:500;color:#1c1917;margin-bottom:4px;">${s.name}</div>
-              <div style="background:#e5e5e5;border-radius:4px;height:8px;overflow:hidden;">
-                <div style="background:#d97706;height:100%;width:${barWidth}%;border-radius:4px;"></div>
-              </div>
-            </td>
-            <td style="padding:12px 16px;border-bottom:1px solid #e5e5e5;text-align:right;vertical-align:top;">
-              <div style="font-family:monospace;font-weight:500;color:#1c1917;">$${s.price.toFixed(2)}/mo</div>
-              <div style="font-size:12px;color:#78716c;">${percentage}% · $${yearlyPrice.toFixed(0)}/yr${renewalText}</div>
-            </td>
-          </tr>`;
-      })
-      .join('');
+    // Color palette for email segments
+    const emailColors=['#d97706','#0891b2','#7c3aed','#dc2626','#16a34a','#db2777','#2563eb','#ca8a04','#64748b','#f97316'];
+    
+    // Build stacked bar for email
+    const sortedSubs = [...subscriptions].sort((a, b) => b.price - a.price);
+    let stackedBarHtml = sortedSubs.map((s, i) => {
+      const pct = ((s.price / monthly_total) * 100);
+      return `<td style="width:${pct}%;background:${emailColors[i % emailColors.length]};height:24px;"></td>`;
+    }).join('');
+    
+    // Build legend rows for email
+    const legendRows = sortedSubs.map((s, i) => {
+      const yearlyPrice = s.price * 12;
+      const percentage = ((s.price / monthly_total) * 100).toFixed(0);
+      const renewalText = s.renewal_date ? ` · Renews ${new Date(s.renewal_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : '';
+      return `
+        <tr>
+          <td style="padding:10px 16px;border-bottom:1px solid #e5e5e5;">
+            <table cellpadding="0" cellspacing="0" border="0"><tr>
+              <td style="width:12px;height:12px;background:${emailColors[i % emailColors.length]};border-radius:3px;"></td>
+              <td style="padding-left:10px;font-weight:500;color:#1c1917;">${s.name}</td>
+            </tr></table>
+          </td>
+          <td style="padding:10px 16px;border-bottom:1px solid #e5e5e5;text-align:right;">
+            <div style="font-family:monospace;font-weight:500;color:#1c1917;">$${s.price.toFixed(2)}/mo</div>
+            <div style="font-size:12px;color:#78716c;">${percentage}% · $${yearlyPrice.toFixed(0)}/yr${renewalText}</div>
+          </td>
+        </tr>`;
+    }).join('');
 
     // Unsubscribe URL (placeholder - would need actual domain)
     const unsubscribeUrl = `https://divergentmoney.com/unsubscribe?token=${unsubscribe_token}`;
@@ -92,10 +97,17 @@ export default async function handler(req, res) {
       </p>
     </div>
     
-    <!-- Subscriptions with bar chart -->
-    <div style="padding:24px 32px;">
+    <!-- Stacked Bar -->
+    <div style="padding:24px 32px 16px 32px;">
+      <table cellpadding="0" cellspacing="0" border="0" style="width:100%;border-radius:6px;overflow:hidden;">
+        <tr>${stackedBarHtml}</tr>
+      </table>
+    </div>
+    
+    <!-- Legend/Subscriptions -->
+    <div style="padding:0 32px 24px 32px;">
       <table style="width:100%;border-collapse:collapse;">
-        ${subscriptionRows}
+        ${legendRows}
       </table>
     </div>
     
