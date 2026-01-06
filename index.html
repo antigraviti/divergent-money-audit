@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subscription Audit | Divergent Money</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg-primary:#fafaf9;--bg-secondary:#f5f5f4;--bg-card:#fff;--bg-card-hover:#fafaf9;--text-primary:#1c1917;--text-secondary:#57534e;--text-muted:#a8a29e;--accent:#d97706;--accent-light:#fef3c7;--accent-hover:#b45309;--success:#16a34a;--success-light:#dcfce7;--border:#e7e5e4;--border-light:#d6d3d1;--shadow:0 1px 3px rgba(0,0,0,.08);--shadow-lg:0 10px 15px -3px rgba(0,0,0,.08)}
+    [data-theme="dark"]{--bg-primary:#0c0a09;--bg-secondary:#1c1917;--bg-card:#1c1917;--bg-card-hover:#292524;--text-primary:#fafaf9;--text-secondary:#a8a29e;--text-muted:#78716c;--accent:#f59e0b;--accent-light:rgba(245,158,11,.15);--accent-hover:#fbbf24;--success:#22c55e;--success-light:rgba(34,197,94,.15);--border:#292524;--border-light:#44403c;--shadow:0 1px 3px rgba(0,0,0,.3);--shadow-lg:0 10px 15px -3px rgba(0,0,0,.3)}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',sans-serif;background:var(--bg-primary);color:var(--text-primary);min-height:100vh;line-height:1.6;transition:background .3s,color .3s}
+    .container{max-width:680px;margin:0 auto;padding:2rem 1.5rem}
+    .theme-toggle{position:fixed;top:1.5rem;right:1.5rem;width:44px;height:44px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);z-index:1000}
+    .theme-toggle:hover{transform:scale(1.05)}.theme-toggle svg{width:20px;height:20px;color:var(--text-secondary)}
+    .theme-toggle .sun{display:none}.theme-toggle .moon{display:block}
+    [data-theme="dark"] .theme-toggle .sun{display:block}[data-theme="dark"] .theme-toggle .moon{display:none}
+    .header{text-align:center;margin-bottom:3rem;padding-top:1rem}
+    .logo{height:32px;margin-bottom:2rem}
+    .logo path{fill:var(--accent)}
+    .header h1{font-family:'Instrument Serif',serif;font-size:2.5rem;font-weight:400;margin-bottom:.5rem}
+    .header p{color:var(--text-secondary);font-size:1rem}
+    .header .hint{font-size:.8rem;color:var(--text-muted);margin-top:.5rem}
+    .progress-bar{display:flex;gap:.5rem;margin-bottom:2rem;max-width:200px;margin-left:auto;margin-right:auto}
+    .progress-step{flex:1;height:4px;background:var(--border);border-radius:2px}.progress-step.active,.progress-step.completed{background:var(--accent)}
+    .category{margin-bottom:2rem}
+    .category-header{display:flex;justify-content:space-between;margin-bottom:.75rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
+    .category-title{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted)}
+    .category-total{font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--accent)}
+    .subscription-grid{display:grid;gap:.4rem}
+    .subscription-item{display:flex;align-items:center;gap:.5rem;padding:.75rem 1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
+    .subscription-item:hover{background:var(--bg-card-hover);transform:translateY(-1px)}
+    .subscription-item.selected{background:var(--accent-light);border-color:var(--accent)}
+    .subscription-checkbox{width:20px;height:20px;border:2px solid var(--border-light);border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .subscription-item.selected .subscription-checkbox{background:var(--accent);border-color:var(--accent)}
+    .subscription-checkbox svg{width:12px;height:12px;color:#fff;opacity:0}.subscription-item.selected .subscription-checkbox svg{opacity:1}
+    .subscription-info{flex:1;min-width:0}.subscription-name{font-weight:500;font-size:.9rem}.subscription-desc{font-size:.75rem;color:var(--text-muted)}
+    .subscription-price{font-family:'JetBrains Mono',monospace;font-size:.85rem;color:var(--text-secondary);padding:.2rem .4rem;border-radius:4px;cursor:text;white-space:nowrap}
+    .subscription-price:hover{background:var(--bg-secondary)}.subscription-item.selected .subscription-price{color:var(--accent);font-weight:500}
+    .price-input{width:70px;background:var(--bg-primary);border:2px solid var(--accent);border-radius:4px;color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-size:.85rem;padding:.2rem .4rem;text-align:right}
+    .billing-toggle select{padding:.2rem .3rem;background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;color:var(--text-muted);font-size:.7rem;cursor:pointer}
+    .billing-toggle select:focus{outline:none;border-color:var(--accent)}
+    .monthly-equiv{font-size:.65rem;color:var(--text-muted);text-align:right}
+    .add-custom{display:flex;gap:.4rem;margin-top:.5rem;flex-wrap:wrap}
+    .add-custom input{flex:1;padding:.6rem .8rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.85rem;min-width:100px}
+    .add-custom input:focus{outline:none;border-color:var(--accent)}
+    .add-custom input[type="number"]{width:80px;flex:none;font-family:'JetBrains Mono',monospace}
+    .add-custom select{padding:.6rem .5rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:.85rem;cursor:pointer}
+    .add-custom button{padding:.6rem 1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:.85rem;cursor:pointer}
+    .add-custom button:hover{background:var(--bg-card-hover);color:var(--text-primary)}
+    .running-total{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(to top,var(--bg-primary) 85%,transparent);padding:1.5rem;z-index:100}
+    .total-card{max-width:680px;margin:0 auto;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;box-shadow:var(--shadow-lg)}
+    .total-label{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em}
+    .total-amounts{display:flex;align-items:baseline;gap:.75rem}
+    .total-monthly{font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:600}
+    .total-monthly span{font-size:.8rem;font-weight:400;color:var(--text-muted)}
+    .total-yearly{font-family:'JetBrains Mono',monospace;font-size:.9rem;color:var(--text-secondary)}
+    .total-yearly span{color:var(--accent);font-weight:600}
+    .continue-btn{padding:.875rem 1.75rem;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:1rem;font-weight:600;cursor:pointer}
+    .continue-btn:hover{background:var(--accent-hover)}.continue-btn:disabled{opacity:.5;cursor:not-allowed}
+    .results{display:none;text-align:center;padding-bottom:8rem}.results.active{display:block}.audit-form.hidden{display:none}
+    .results-icon{width:70px;height:70px;margin:0 auto 1.25rem;background:var(--success-light);border-radius:50%;display:flex;align-items:center;justify-content:center}
+    .results-icon svg{width:35px;height:35px;color:var(--success)}
+    .results h2{font-family:'Instrument Serif',serif;font-size:2rem;font-weight:400;margin-bottom:.4rem}
+    .results-subtitle{color:var(--text-secondary);margin-bottom:1.5rem}
+    .chart-container{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1.5rem;text-align:left}
+    .chart-total{text-align:center;margin-bottom:1rem}
+    .chart-total-amount{font-family:'JetBrains Mono',monospace;font-size:2rem;font-weight:600;color:var(--text-primary)}
+    .chart-total-amount span{font-size:1rem;color:var(--text-muted);font-weight:400}
+    .chart-total-yearly{font-family:'JetBrains Mono',monospace;font-size:1.1rem;color:var(--accent);font-weight:600}
+    .stacked-bar{display:flex;height:32px;border-radius:8px;overflow:hidden;margin-bottom:1rem}
+    .stacked-segment{height:100%;transition:width .3s ease;position:relative}
+    .stacked-segment:hover{opacity:.85}
+    .chart-legend{display:grid;gap:.5rem}
+    .legend-item{display:flex;align-items:center;justify-content:space-between;padding:.5rem .75rem;background:var(--bg-secondary);border-radius:8px}
+    .legend-left{display:flex;align-items:center;gap:.5rem}
+    .legend-color{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+    .legend-name{font-size:.85rem;font-weight:500}
+    .legend-right{text-align:right}
+    .legend-price{font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:500}
+    .legend-detail{font-size:.7rem;color:var(--text-muted)}
+    .results-breakdown{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1.5rem;text-align:left}
+    .breakdown-row{display:flex;justify-content:space-between;padding:.7rem 0;border-bottom:1px solid var(--border)}
+    .breakdown-row:last-child{border-bottom:none}
+    .breakdown-row.total{padding-top:.875rem;margin-top:.4rem;border-top:2px solid var(--border);border-bottom:none}
+    .breakdown-label{color:var(--text-secondary)}.breakdown-value{font-family:'JetBrains Mono',monospace;font-weight:500}
+    .breakdown-row.total .breakdown-label{color:var(--text-primary);font-weight:600}
+    .breakdown-row.total .breakdown-value{color:var(--accent);font-size:1.1rem;font-weight:600}
+    .renewal-section{background:var(--bg-secondary);border:1px solid var(--border);border-radius:14px;padding:1.5rem;margin-bottom:1.5rem;text-align:left}
+    .renewal-section h3{font-family:'Instrument Serif',serif;font-size:1.3rem;font-weight:400;margin-bottom:.4rem}
+    .renewal-section>p{color:var(--text-secondary);font-size:.9rem;margin-bottom:1rem}
+    .renewal-list{display:grid;gap:.5rem}
+    .renewal-item{display:flex;align-items:center;justify-content:space-between;padding:.6rem .8rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px}
+    .renewal-item-name{font-size:.9rem;font-weight:500}
+    .renewal-item-date input{padding:.4rem .6rem;background:var(--bg-primary);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:.85rem;width:130px}
+    .renewal-item-date input:focus{outline:none;border-color:var(--accent)}
+    .renewal-skip{font-size:.8rem;color:var(--text-muted);text-align:center;margin-top:.75rem}
+    .renewal-skip a{color:var(--accent);cursor:pointer;text-decoration:none}
+    .renewal-skip a:hover{text-decoration:underline}
+    .email-capture{background:var(--bg-secondary);border:1px solid var(--border);border-radius:14px;padding:1.5rem;margin-bottom:1.5rem}
+    .email-capture h3{font-family:'Instrument Serif',serif;font-size:1.3rem;font-weight:400;margin-bottom:.4rem}
+    .email-capture p{color:var(--text-secondary);font-size:.9rem;margin-bottom:1rem}
+    .email-form{display:flex;gap:.4rem}
+    .email-form input{flex:1;padding:.75rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.95rem}
+    .email-form input:focus{outline:none;border-color:var(--accent)}
+    .email-form button{padding:.75rem 1.25rem;background:var(--accent);border:none;border-radius:8px;color:#fff;font-weight:600;cursor:pointer}
+    .email-form button:hover{background:var(--accent-hover)}.email-form button:disabled{opacity:.7;cursor:not-allowed}
+    .email-success{display:none;color:var(--success);font-weight:500;padding:1rem}.email-success.active{display:block}.email-form.hidden{display:none}
+    .selected-list{text-align:left;margin-top:1.5rem}
+    .selected-list h4{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:.75rem}
+    .selected-item{display:flex;justify-content:space-between;padding:.4rem 0;font-size:.85rem;color:var(--text-secondary)}
+    .selected-item span:last-child{font-family:'JetBrains Mono',monospace}
+    .bottom-spacer{height:130px}
+    @media(max-width:540px){.header h1{font-size:2rem}.total-card{flex-direction:column;text-align:center}.total-amounts{justify-content:center}.continue-btn{width:100%}.email-form{flex-direction:column}.email-form button{width:100%}.add-custom{flex-direction:column}.add-custom input,.add-custom select{width:100%}.renewal-item{flex-direction:column;align-items:flex-start;gap:.5rem}.renewal-item-date{width:100%}.renewal-item-date input{width:100%}}
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+    <svg class="sun" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+    <svg class="moon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+  </button>
+  <div class="container">
+    <header class="header">
+      <svg class="logo" viewBox="0 0 1420.8 239.1"><path d="M17.7,1.6h35.7c26,0,41.9,16.8,41.9,42.5s-22.1,57.8-56.6,57.8H0L17.7,1.6ZM38.5,25.8l-9.1,51.9h11.8c18.1,0,28-14.6,28-31.4s-6-20.5-18.9-20.5h-11.8Z"/><path d="M118.5,1.6h25.1l-17.7,100.3h-25.1L118.5,1.6Z"/><path d="M152.4,1.6h26.8l9.1,71.4L222.6,1.6h29.2l-53.4,100.3h-28L152.4,1.6Z"/><path d="M243.4,101.9L261.1,1.6h57.2l-4.3,24.2h-32.1l-2.4,13.4h29.3l-4.3,24.2h-29.3l-2.5,14.3h32.1l-4.3,24.2h-57.2Z"/><path d="M336.3,1.6h35.1c17.4,0,29.9,9.6,29.9,26.1s-10.3,26.1-21.2,29.6c11.4,6.9,13.9,24.2,11.8,44.5h-26.1c2.5-21.2-2.5-35.1-14-35.1h-1.9l-6.2,35.1h-25.1L336.3,1.6ZM368.6,25.8h-11.5l-3,16.8h11.4c5.2,0,9.1-3.8,9.1-10.2s-2.4-6.6-6-6.6Z"/><path d="M488.6,31.1c-5.9-3.5-14.9-6-25.2-6-15.6,0-29.3,13.6-29.3,31.2s7.2,22.1,20.3,22.1,20-6.5,21.8-17.2h-20l4-22.7h45.4c0,.6.1,3.2.1,4.1,0,31.4-19.3,60.9-54.5,60.9s-43.3-18.4-43.3-44.5S433.8,0,466.3,0s19.6,1.5,25.5,4l-3.2,27.1Z"/><path d="M509.2,101.9L526.9,1.6h57.2l-4.3,24.2h-32.1l-2.4,13.4h29.3l-4.3,24.2h-29.3l-2.5,14.3h32.1l-4.3,24.2h-57.2Z"/><path d="M619.1,50.9l-9,51h-25.1l15.3-87.1-4.7-11.5.3-1.6h28l26.2,56.6,10-56.6h25.1l-17.7,100.2h-23.6l-24.9-51h.1Z"/><path d="M717,25.8h-22.3l4.3-24.2h69.6l-4.3,24.2h-22.3l-13.4,76.1h-25.1l13.4-76.1Z"/><path d="M563.3,237l-9.8-69.7-12.2,69.7h-31.4l22.2-125.7h37.3l13.1,85.6,43.3-85.6h40.1l-22.2,125.7h-31.4l12.4-69.9-34.4,69.9h-27Z"/><path d="M745.2,109.3c32.5,0,55.1,23.5,55.1,56.2s-33.7,73.6-72.7,73.6-55.1-23.5-55.1-56.2,33.8-73.6,72.7-73.6ZM730.8,207.6c18.9,0,36.6-17.9,36.6-38.8s-9.8-28.1-25.5-28.1-36.4,18.1-36.4,39,9.8,27.9,25.3,27.9Z"/><path d="M850.4,173.1l-11.3,64h-31.4l19.2-109.3-5.9-14.4.4-2h35.1l32.9,71,12.6-71h31.4l-22.2,125.7h-29.6l-31.2-64Z"/><path d="M936.9,237l22.2-125.7h71.7l-5.4,30.3h-40.3l-3,16.8h36.8l-5.4,30.3h-36.8l-3.1,17.9h40.3l-5.4,30.3h-71.8.2Z"/><path d="M1064.2,183.4l-25.7-72.1h33.8l11.8,41.1,76.2-106.7,22.3,16-87.1,122.1-9.4,53.2h-31.4l9.4-53.6Z"/><path d="M1136.5,206.8c8,0,13.3,5.6,13.3,13.4s-8.7,18.3-18.9,18.3-13.3-5.4-13.3-13.3,8.6-18.4,18.9-18.4Z"/><path d="M1208.3,236.3c-3.8,1.8-9.6,2.4-13.6,2.4-20.3,0-33.6-14-33.6-33.8s18-43.6,44.4-43.6,12.2,1,15.5,2.6l-4.4,25.2c-2.8-2.2-7.5-4.4-13.7-4.4-9.3,0-17,8.4-17,17.7s4.3,12.8,11.5,12.8,11.8-2.2,15.3-4.4l-4.4,25.5Z"/><path d="M1265.7,161.2c19.5,0,33.5,14,33.5,33.8s-19.8,43.6-42.9,43.6-33.5-14.1-33.5-33.9,19.8-43.5,42.9-43.5ZM1258.6,215.2c8.4,0,15.9-8.6,15.9-18s-4.1-12.5-11.1-12.5-16.1,8.4-16.1,17.7,4.1,12.8,11.2,12.8Z"/><path d="M1339.4,170.2c4.7-5.5,9.9-9,18.1-9s17.4,3.8,20.1,11.5c4.9-6.8,11.7-11.5,22.3-11.5s23.3,11.6,20.5,27.1l-8.6,48.6h-24l7.4-41.4c1.2-6.8-1.5-10.9-7.1-10.9s-10,4.1-11.2,10.9l-7.4,41.4h-24l7.4-41.4c1.2-6.8-1.5-10.9-6.8-10.9s-9.7,3.7-11.1,9.9l-7.5,42.5h-24l13.1-74.3h24l-1.2,7.5Z"/><polygon points="1211.3 1.7 1141.7 37.5 1194.3 77.7 1211.3 1.7"/><polygon points="551.1 135.2 550.8 111.3 507.3 110.3 551.1 135.2"/></svg>
+      <h1>Subscription Audit</h1>
+      <p>Find out what you're really spending.</p>
+      <p class="hint">Tap prices to edit • Toggle monthly/yearly billing</p>
+    </header>
+    <div class="progress-bar"><div class="progress-step active"></div><div class="progress-step"></div><div class="progress-step"></div></div>
+    <div class="audit-form" id="auditForm">
+      <div class="category" data-category="streaming"><div class="category-header"><span class="category-title">📺 Streaming</span><span class="category-total">$0/mo</span></div><div class="subscription-grid" id="streaming-grid"></div>
+      <div class="add-custom"><input type="text" placeholder="Other streaming..." class="custom-name"><input type="number" placeholder="$0" step="0.01" min="0" class="custom-price"><select class="custom-billing"><option value="monthly">/mo</option><option value="yearly">/yr</option></select><button type="button" class="add-custom-btn">Add</button></div></div>
+      
+      <div class="category" data-category="music"><div class="category-header"><span class="category-title">🎵 Music & Audio</span><span class="category-total">$0/mo</span></div><div class="subscription-grid" id="music-grid"></div>
+      <div class="add-custom"><input type="text" placeholder="Other music/audio..." class="custom-name"><input type="number" placeholder="$0" step="0.01" min="0" class="custom-price"><select class="custom-billing"><option value="monthly">/mo</option><option value="yearly">/yr</option></select><button type="button" class="add-custom-btn">Add</button></div></div>
+      
+      <div class="category" data-category="software"><div class="category-header"><span class="category-title">💻 Software & Apps</span><span class="category-total">$0/mo</span></div><div class="subscription-grid" id="software-grid"></div>
+      <div class="add-custom"><input type="text" placeholder="Other software..." class="custom-name"><input type="number" placeholder="$0" step="0.01" min="0" class="custom-price"><select class="custom-billing"><option value="monthly">/mo</option><option value="yearly">/yr</option></select><button type="button" class="add-custom-btn">Add</button></div></div>
+      
+      <div class="category" data-category="shopping"><div class="category-header"><span class="category-title">📦 Shopping & Memberships</span><span class="category-total">$0/mo</span></div><div class="subscription-grid" id="shopping-grid"></div>
+      <div class="add-custom"><input type="text" placeholder="Other shopping/memberships..." class="custom-name"><input type="number" placeholder="$0" step="0.01" min="0" class="custom-price"><select class="custom-billing"><option value="monthly">/mo</option><option value="yearly">/yr</option></select><button type="button" class="add-custom-btn">Add</button></div></div>
+      
+      <div class="category" data-category="gaming"><div class="category-header"><span class="category-title">🎮 Gaming</span><span class="category-total">$0/mo</span></div><div class="subscription-grid" id="gaming-grid"></div>
+      <div class="add-custom"><input type="text" placeholder="Other gaming..." class="custom-name"><input type="number" placeholder="$0" step="0.01" min="0" class="custom-price"><select class="custom-billing"><option value="monthly">/mo</option><option value="yearly">/yr</option></select><button type="button" class="add-custom-btn">Add</button></div></div>
+      
+      <div class="category" data-category="fitness"><div class="category-header"><span class="category-title">💪 Health & Fitness</span><span class="category-total">$0/mo</span></div><div class="subscription-grid" id="fitness-grid"></div>
+      <div class="add-custom"><input type="text" placeholder="Other fitness..." class="custom-name"><input type="number" placeholder="$0" step="0.01" min="0" class="custom-price"><select class="custom-billing"><option value="monthly">/mo</option><option value="yearly">/yr</option></select><button type="button" class="add-custom-btn">Add</button></div></div>
+      
+      <div class="category" data-category="news"><div class="category-header"><span class="category-title">📰 News & Learning</span><span class="category-total">$0/mo</span></div><div class="subscription-grid" id="news-grid"></div>
+      <div class="add-custom"><input type="text" placeholder="Other news/learning..." class="custom-name"><input type="number" placeholder="$0" step="0.01" min="0" class="custom-price"><select class="custom-billing"><option value="monthly">/mo</option><option value="yearly">/yr</option></select><button type="button" class="add-custom-btn">Add</button></div></div>
+      
+      <div class="bottom-spacer"></div>
+    </div>
+    <div class="results" id="results">
+      <div class="results-icon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+      <h2>Your Subscription Audit</h2>
+      <p class="results-subtitle">Here's what you're spending</p>
+      <div class="chart-container" id="chartContainer"></div>
+      <div class="email-capture">
+        <h3>Get your results</h3>
+        <p>We'll email your audit breakdown and remind you before renewals.</p>
+        <form class="email-form" id="emailForm"><input type="email" placeholder="your@email.com" required id="emailInput"><button type="submit">Send Results</button></form>
+        <div class="email-success" id="emailSuccess">✓ Check your inbox for your audit results!</div>
+      </div>
+      <div class="results-breakdown" id="resultsBreakdown"></div>
+      <div class="renewal-section" id="renewalSection">
+        <h3>Add renewal dates (optional)</h3>
+        <p>Know when these renew? We'll remind you before each one.</p>
+        <div class="renewal-list" id="renewalList"></div>
+        <div class="renewal-skip"><a id="skipRenewals">Skip for now</a> — you can add these later</div>
+      </div>
+      <div class="selected-list" id="selectedList"></div>
+    </div>
+  </div>
+  <div class="running-total"><div class="total-card"><div class="total-info"><div class="total-label">Your subscriptions</div><div class="total-amounts"><div class="total-monthly" id="totalMonthly">$0.00<span>/mo</span></div><div class="total-yearly"><span id="totalYearly">$0</span>/yr</div></div></div><button class="continue-btn" id="continueBtn" disabled>See Results</button></div></div>
+  <script>
+    // Subscription data with default billing frequency
+    const subscriptionData = {
+      streaming: [
+        {name:'Netflix',desc:'Standard',price:15.49,billing:'monthly'},
+        {name:'Hulu',desc:'No ads',price:17.99,billing:'monthly'},
+        {name:'Disney+',desc:'Standard',price:13.99,billing:'monthly'},
+        {name:'Max',desc:'Ad-free',price:15.99,billing:'monthly'},
+        {name:'Prime Video',desc:'Standalone',price:8.99,billing:'monthly'},
+        {name:'Apple TV+',desc:'Monthly',price:9.99,billing:'monthly'},
+        {name:'Peacock',desc:'Premium',price:7.99,billing:'monthly'},
+        {name:'Paramount+',desc:'With Showtime',price:11.99,billing:'monthly'},
+        {name:'YouTube Premium',desc:'Individual',price:13.99,billing:'monthly'}
+      ],
+      music: [
+        {name:'Spotify',desc:'Individual',price:11.99,billing:'monthly'},
+        {name:'Apple Music',desc:'Individual',price:10.99,billing:'monthly'},
+        {name:'Audible',desc:'1 credit/mo',price:14.95,billing:'monthly'}
+      ],
+      software: [
+        {name:'Adobe CC',desc:'All apps',price:54.99,billing:'monthly'},
+        {name:'Microsoft 365',desc:'Personal',price:99.99,billing:'yearly'},
+        {name:'iCloud+',desc:'200GB',price:2.99,billing:'monthly'},
+        {name:'ChatGPT Plus',desc:'OpenAI',price:20.00,billing:'monthly'},
+        {name:'Claude Pro',desc:'Anthropic',price:20.00,billing:'monthly'},
+        {name:'Dropbox',desc:'Plus',price:11.99,billing:'monthly'},
+        {name:'1Password',desc:'Individual',price:35.88,billing:'yearly'}
+      ],
+      shopping: [
+        {name:'Amazon Prime',desc:'Full membership',price:139,billing:'yearly'},
+        {name:'Costco',desc:'Gold Star',price:65,billing:'yearly'},
+        {name:'Walmart+',desc:'Membership',price:98,billing:'yearly'},
+        {name:'DashPass',desc:'DoorDash',price:9.99,billing:'monthly'},
+        {name:'Uber One',desc:'Eats + Rides',price:9.99,billing:'monthly'},
+        {name:'Instacart+',desc:'Delivery',price:99,billing:'yearly'}
+      ],
+      gaming: [
+        {name:'Xbox Game Pass',desc:'Ultimate',price:16.99,billing:'monthly'},
+        {name:'PlayStation Plus',desc:'Premium',price:159.99,billing:'yearly'},
+        {name:'Nintendo Online',desc:'Individual',price:19.99,billing:'yearly'},
+        {name:'EA Play',desc:'Pro',price:14.99,billing:'monthly'}
+      ],
+      fitness: [
+        {name:'Gym Membership',desc:'Average',price:40.00,billing:'monthly'},
+        {name:'Peloton',desc:'All-Access',price:44.00,billing:'monthly'},
+        {name:'Headspace',desc:'Mindfulness',price:69.99,billing:'yearly'},
+        {name:'Strava',desc:'Premium',price:79.99,billing:'yearly'}
+      ],
+      news: [
+        {name:'New York Times',desc:'All Access',price:17.00,billing:'monthly'},
+        {name:'Wall Street Journal',desc:'Digital',price:12.00,billing:'monthly'},
+        {name:'The Athletic',desc:'Sports',price:71.99,billing:'yearly'},
+        {name:'Duolingo Plus',desc:'Super',price:83.99,billing:'yearly'}
+      ]
+    };
+
+    // Theme toggle
+    const themeToggle=document.getElementById('themeToggle');
+    const savedTheme=localStorage.getItem('theme')||'dark';
+    document.documentElement.setAttribute('data-theme',savedTheme);
+    themeToggle.onclick=()=>{const t=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',t);localStorage.setItem('theme',t);};
+
+    let selected=[];
+    let catTotals={streaming:0,music:0,software:0,shopping:0,gaming:0,fitness:0,news:0};
+
+    // Create subscription item HTML
+    function createSubItem(sub, cat) {
+      const monthlyPrice = sub.billing === 'yearly' ? sub.price / 12 : sub.price;
+      const displayPrice = sub.price.toFixed(2);
+      const monthlyEquiv = sub.billing === 'yearly' ? `<div class="monthly-equiv">$${monthlyPrice.toFixed(2)}/mo</div>` : '';
+      
+      return `
+        <div class="subscription-item" data-name="${sub.name}" data-price="${sub.price}" data-billing="${sub.billing}" data-category="${cat}">
+          <div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div>
+          <div class="subscription-info"><div class="subscription-name">${sub.name}</div><div class="subscription-desc">${sub.desc}</div></div>
+          <div style="text-align:right">
+            <div class="subscription-price">$${displayPrice}</div>
+            ${monthlyEquiv}
+          </div>
+          <div class="billing-toggle">
+            <select class="billing-freq">
+              <option value="monthly" ${sub.billing==='monthly'?'selected':''}>/mo</option>
+              <option value="yearly" ${sub.billing==='yearly'?'selected':''}>/yr</option>
+            </select>
+          </div>
+        </div>`;
+    }
+
+    // Initialize grids
+    Object.keys(subscriptionData).forEach(cat => {
+      const grid = document.getElementById(cat + '-grid');
+      if (grid) {
+        grid.innerHTML = subscriptionData[cat].map(sub => createSubItem(sub, cat)).join('');
+      }
+    });
+
+    // Get monthly equivalent
+    function getMonthlyPrice(item) {
+      const price = parseFloat(item.dataset.price);
+      const billing = item.dataset.billing;
+      return billing === 'yearly' ? price / 12 : price;
+    }
+
+    // Event delegation for subscription items
+    document.querySelectorAll('.subscription-grid').forEach(grid => {
+      grid.addEventListener('click', e => {
+        const item = e.target.closest('.subscription-item');
+        if (!item) return;
+        if (e.target.closest('.billing-toggle') || e.target.closest('.subscription-price')) return;
+        toggleItem(item);
+      });
+
+      grid.addEventListener('change', e => {
+        if (e.target.classList.contains('billing-freq')) {
+          const item = e.target.closest('.subscription-item');
+          const newBilling = e.target.value;
+          item.dataset.billing = newBilling;
+          
+          // Update monthly equiv display
+          const price = parseFloat(item.dataset.price);
+          const priceDiv = item.querySelector('.subscription-price').parentElement;
+          const existingEquiv = priceDiv.querySelector('.monthly-equiv');
+          
+          if (newBilling === 'yearly') {
+            if (!existingEquiv) {
+              const equiv = document.createElement('div');
+              equiv.className = 'monthly-equiv';
+              equiv.textContent = `$${(price/12).toFixed(2)}/mo`;
+              priceDiv.appendChild(equiv);
+            }
+          } else {
+            if (existingEquiv) existingEquiv.remove();
+          }
+          
+          // If selected, update totals
+          if (item.classList.contains('selected')) {
+            const cat = item.dataset.category;
+            recalculateCategoryTotal(cat);
+            updateTotals();
+          }
+        }
+      });
+    });
+
+    function toggleItem(item) {
+      const name = item.dataset.name;
+      const cat = item.dataset.category;
+      item.classList.toggle('selected');
+      
+      if (item.classList.contains('selected')) {
+        selected.push({
+          name,
+          price: parseFloat(item.dataset.price),
+          billing: item.dataset.billing,
+          category: cat
+        });
+      } else {
+        selected = selected.filter(s => s.name !== name);
+      }
+      
+      recalculateCategoryTotal(cat);
+      updateTotals();
+    }
+
+    function recalculateCategoryTotal(cat) {
+      let total = 0;
+      document.querySelectorAll(`.subscription-item.selected[data-category="${cat}"]`).forEach(item => {
+        total += getMonthlyPrice(item);
+      });
+      catTotals[cat] = total;
+      const catEl = document.querySelector(`.category[data-category="${cat}"] .category-total`);
+      if (catEl) catEl.textContent = `$${total.toFixed(2)}/mo`;
+    }
+
+    function updateTotals() {
+      const m = Object.values(catTotals).reduce((a,b) => a+b, 0);
+      const y = m * 12;
+      document.getElementById('totalMonthly').innerHTML = `$${m.toFixed(2)}<span>/mo</span>`;
+      document.getElementById('totalYearly').textContent = `$${Math.round(y).toLocaleString()}`;
+      document.getElementById('continueBtn').disabled = selected.length === 0;
+      
+      const steps = document.querySelectorAll('.progress-step');
+      steps[0].classList.toggle('completed', selected.length > 0);
+      steps[1].classList.toggle('active', selected.length > 0);
+    }
+
+    // Price editing
+    document.addEventListener('click', e => {
+      if (e.target.classList.contains('subscription-price')) {
+        e.stopPropagation();
+        const priceEl = e.target;
+        const item = priceEl.closest('.subscription-item');
+        const currentPrice = parseFloat(item.dataset.price);
+        
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'price-input';
+        input.value = currentPrice.toFixed(2);
+        input.step = '0.01';
+        
+        priceEl.textContent = '';
+        priceEl.appendChild(input);
+        input.focus();
+        input.select();
+        
+        const save = () => {
+          const newPrice = parseFloat(input.value) || 0;
+          item.dataset.price = newPrice;
+          priceEl.textContent = `$${newPrice.toFixed(2)}`;
+          
+          // Update monthly equiv if yearly
+          if (item.dataset.billing === 'yearly') {
+            const equivEl = priceEl.parentElement.querySelector('.monthly-equiv');
+            if (equivEl) equivEl.textContent = `$${(newPrice/12).toFixed(2)}/mo`;
+          }
+          
+          // Update selected array and totals
+          const sel = selected.find(s => s.name === item.dataset.name);
+          if (sel) sel.price = newPrice;
+          
+          if (item.classList.contains('selected')) {
+            recalculateCategoryTotal(item.dataset.category);
+            updateTotals();
+          }
+        };
+        
+        input.onblur = save;
+        input.onkeydown = e => { if (e.key === 'Enter') input.blur(); };
+      }
+    });
+
+    // Add custom subscription
+    document.querySelectorAll('.add-custom-btn').forEach(btn => {
+      btn.onclick = () => {
+        const container = btn.closest('.add-custom');
+        const nameInput = container.querySelector('.custom-name');
+        const priceInput = container.querySelector('.custom-price');
+        const billingSelect = container.querySelector('.custom-billing');
+        const cat = btn.closest('.category').dataset.category;
+        
+        const name = nameInput.value.trim();
+        const price = parseFloat(priceInput.value);
+        const billing = billingSelect.value;
+        
+        if (name && price > 0) {
+          const grid = document.getElementById(cat + '-grid');
+          const sub = {name, desc: 'Custom', price, billing};
+          grid.insertAdjacentHTML('beforeend', createSubItem(sub, cat));
+          
+          // Auto-select the new item
+          const newItem = grid.lastElementChild;
+          toggleItem(newItem);
+          
+          // Clear inputs
+          nameInput.value = '';
+          priceInput.value = '';
+          billingSelect.value = 'monthly';
+        }
+      };
+    });
+
+    // Continue button
+    document.getElementById('continueBtn').onclick = () => {
+      if (selected.length === 0) return;
+      
+      // Rebuild selected array with current data
+      selected = [];
+      document.querySelectorAll('.subscription-item.selected').forEach(item => {
+        selected.push({
+          name: item.dataset.name,
+          price: parseFloat(item.dataset.price),
+          billing: item.dataset.billing,
+          category: item.dataset.category,
+          monthlyPrice: getMonthlyPrice(item)
+        });
+      });
+      
+      const colors = ['#d97706','#0891b2','#7c3aed','#dc2626','#16a34a','#db2777','#2563eb','#ca8a04','#64748b','#f97316'];
+      const m = selected.reduce((a,s) => a + s.monthlyPrice, 0);
+      const y = m * 12;
+      
+      // Build chart
+      let chartHtml = `
+        <div class="chart-total">
+          <div class="chart-total-amount">$${m.toFixed(2)}<span>/mo</span></div>
+          <div class="chart-total-yearly">$${Math.round(y).toLocaleString()}/year</div>
+        </div>
+        <div class="stacked-bar">`;
+      
+      const sorted = [...selected].sort((a,b) => b.monthlyPrice - a.monthlyPrice);
+      sorted.forEach((s,i) => {
+        const pct = (s.monthlyPrice / m) * 100;
+        chartHtml += `<div class="stacked-segment" style="width:${pct}%;background:${colors[i%colors.length]}" title="${s.name}: $${s.monthlyPrice.toFixed(2)}/mo"></div>`;
+      });
+      
+      chartHtml += `</div><div class="chart-legend">`;
+      sorted.forEach((s,i) => {
+        const pct = ((s.monthlyPrice / m) * 100).toFixed(0);
+        const yearly = (s.monthlyPrice * 12).toFixed(0);
+        const billingNote = s.billing === 'yearly' ? ` (billed $${s.price}/yr)` : '';
+        chartHtml += `
+          <div class="legend-item">
+            <div class="legend-left">
+              <div class="legend-color" style="background:${colors[i%colors.length]}"></div>
+              <span class="legend-name">${s.name}</span>
+            </div>
+            <div class="legend-right">
+              <div class="legend-price">$${s.monthlyPrice.toFixed(2)}/mo</div>
+              <div class="legend-detail">${pct}% · $${yearly}/yr${billingNote}</div>
+            </div>
+          </div>`;
+      });
+      chartHtml += '</div>';
+      document.getElementById('chartContainer').innerHTML = chartHtml;
+      
+      // Category breakdown
+      const catNames = {streaming:'📺 Streaming',music:'🎵 Music',software:'💻 Software',shopping:'📦 Shopping',gaming:'🎮 Gaming',fitness:'💪 Fitness',news:'📰 News'};
+      let breakdownHtml = '';
+      Object.keys(catTotals).forEach(c => {
+        if (catTotals[c] > 0) {
+          breakdownHtml += `<div class="breakdown-row"><span class="breakdown-label">${catNames[c]}</span><span class="breakdown-value">$${catTotals[c].toFixed(2)}/mo</span></div>`;
+        }
+      });
+      breakdownHtml += `<div class="breakdown-row total"><span class="breakdown-label">Annual Total</span><span class="breakdown-value">$${Math.round(y).toLocaleString()}/yr</span></div>`;
+      document.getElementById('resultsBreakdown').innerHTML = breakdownHtml;
+      
+      // Renewal dates
+      const today = new Date();
+      const minDate = today.toISOString().split('T')[0];
+      const maxDate = new Date(today.getFullYear()+1, today.getMonth(), today.getDate()).toISOString().split('T')[0];
+      let renewalHtml = '';
+      selected.forEach((s,i) => {
+        renewalHtml += `<div class="renewal-item"><span class="renewal-item-name">${s.name}</span><div class="renewal-item-date"><input type="date" data-index="${i}" min="${minDate}" max="${maxDate}"></div></div>`;
+      });
+      document.getElementById('renewalList').innerHTML = renewalHtml;
+      
+      // Selected list
+      let listHtml = '<h4>Your Subscriptions</h4>';
+      selected.forEach(s => {
+        listHtml += `<div class="selected-item"><span>${s.name}</span><span>$${s.monthlyPrice.toFixed(2)}/mo</span></div>`;
+      });
+      document.getElementById('selectedList').innerHTML = listHtml;
+      
+      document.getElementById('auditForm').classList.add('hidden');
+      document.getElementById('results').classList.add('active');
+      document.querySelectorAll('.progress-step')[1].classList.add('completed');
+      document.querySelectorAll('.progress-step')[2].classList.add('active');
+      window.scrollTo({top:0,behavior:'smooth'});
+    };
+
+    // Skip renewals
+    document.getElementById('skipRenewals').onclick = () => {
+      document.getElementById('renewalSection').style.display = 'none';
+    };
+
+    // Email form
+    document.getElementById('emailForm').onsubmit = async e => {
+      e.preventDefault();
+      const email = document.getElementById('emailInput').value;
+      const btn = e.target.querySelector('button');
+      const orig = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+      
+      // Collect and validate renewal dates
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const maxDate = new Date(today.getFullYear()+1, today.getMonth(), today.getDate());
+      let dateError = false;
+      
+      document.querySelectorAll('#renewalList input[type="date"]').forEach(input => {
+        const idx = parseInt(input.dataset.index);
+        if (input.value && selected[idx]) {
+          const inputDate = new Date(input.value);
+          if (inputDate < today || inputDate > maxDate) {
+            dateError = true;
+            input.style.borderColor = '#dc2626';
+          } else {
+            selected[idx].renewal_date = input.value;
+            input.style.borderColor = '';
+          }
+        }
+      });
+      
+      if (dateError) {
+        btn.disabled = false;
+        btn.textContent = orig;
+        alert('Please enter valid renewal dates (today through 1 year from now).');
+        return;
+      }
+      
+      const m = selected.reduce((a,s) => a + s.monthlyPrice, 0);
+      const y = m * 12;
+      
+      try {
+        const r = await fetch('/api/submit', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            email,
+            subscriptions: selected,
+            monthly_total: m,
+            yearly_total: y
+          })
+        });
+        if (!r.ok) throw new Error();
+        document.getElementById('emailForm').classList.add('hidden');
+        document.getElementById('emailSuccess').classList.add('active');
+        document.querySelectorAll('.progress-step')[2].classList.add('completed');
+        document.getElementById('renewalSection').style.display = 'none';
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = orig;
+        alert('Something went wrong. Please try again.');
+      }
+    };
+  </script>
+</body>
+</html>
