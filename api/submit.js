@@ -125,9 +125,6 @@ export default async function handler(req, res) {
       <p style="margin:0;color:#92400e;font-weight:500;">
         📅 We'll remind you before these renew.
       </p>
-      <p style="margin:8px 0 0 0;color:#92400e;font-size:14px;">
-        Missing renewal dates? Reply to this email to add them.
-      </p>
     </div>
     
     <!-- Footer -->
