@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subscription Audit | Divergent Money</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg-primary:#fafaf9;--bg-secondary:#f5f5f4;--bg-card:#fff;--bg-card-hover:#fafaf9;--text-primary:#1c1917;--text-secondary:#57534e;--text-muted:#a8a29e;--accent:#d97706;--accent-light:#fef3c7;--accent-hover:#b45309;--success:#16a34a;--success-light:#dcfce7;--border:#e7e5e4;--border-light:#d6d3d1;--shadow:0 1px 3px rgba(0,0,0,.08);--shadow-lg:0 10px 15px -3px rgba(0,0,0,.08)}
+    [data-theme="dark"]{--bg-primary:#0c0a09;--bg-secondary:#1c1917;--bg-card:#1c1917;--bg-card-hover:#292524;--text-primary:#fafaf9;--text-secondary:#a8a29e;--text-muted:#78716c;--accent:#f59e0b;--accent-light:rgba(245,158,11,.15);--accent-hover:#fbbf24;--success:#22c55e;--success-light:rgba(34,197,94,.15);--border:#292524;--border-light:#44403c;--shadow:0 1px 3px rgba(0,0,0,.3);--shadow-lg:0 10px 15px -3px rgba(0,0,0,.3)}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',sans-serif;background:var(--bg-primary);color:var(--text-primary);min-height:100vh;line-height:1.6;transition:background .3s,color .3s}
+    .container{max-width:680px;margin:0 auto;padding:2rem 1.5rem}
+    .theme-toggle{position:fixed;top:1.5rem;right:1.5rem;width:44px;height:44px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);z-index:1000}
+    .theme-toggle:hover{transform:scale(1.05)}.theme-toggle svg{width:20px;height:20px;color:var(--text-secondary)}
+    .theme-toggle .sun{display:none}.theme-toggle .moon{display:block}
+    [data-theme="dark"] .theme-toggle .sun{display:block}[data-theme="dark"] .theme-toggle .moon{display:none}
+    .header{text-align:center;margin-bottom:3rem;padding-top:1rem}
+    .logo{height:32px;margin-bottom:2rem}
+    .logo path{fill:var(--accent)}
+    .header h1{font-family:'Instrument Serif',serif;font-size:2.5rem;font-weight:400;margin-bottom:.5rem}
+    .header p{color:var(--text-secondary);font-size:1rem}
+    .header .hint{font-size:.8rem;color:var(--text-muted);margin-top:.5rem}
+    .progress-bar{display:flex;gap:.5rem;margin-bottom:2rem;max-width:200px;margin-left:auto;margin-right:auto}
+    .progress-step{flex:1;height:4px;background:var(--border);border-radius:2px}.progress-step.active,.progress-step.completed{background:var(--accent)}
+    .category{margin-bottom:2rem}
+    .category-header{display:flex;justify-content:space-between;margin-bottom:.75rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
+    .category-title{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted)}
+    .category-total{font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--accent)}
+    .subscription-grid{display:grid;gap:.4rem}
+    .subscription-item{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
+    .subscription-item:hover{background:var(--bg-card-hover);transform:translateY(-1px)}
+    .subscription-item.selected{background:var(--accent-light);border-color:var(--accent)}
+    .subscription-checkbox{width:20px;height:20px;border:2px solid var(--border-light);border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .subscription-item.selected .subscription-checkbox{background:var(--accent);border-color:var(--accent)}
+    .subscription-checkbox svg{width:12px;height:12px;color:#fff;opacity:0}.subscription-item.selected .subscription-checkbox svg{opacity:1}
+    .subscription-info{flex:1}.subscription-name{font-weight:500;font-size:.9rem}.subscription-desc{font-size:.75rem;color:var(--text-muted)}
+    .subscription-price{font-family:'JetBrains Mono',monospace;font-size:.85rem;color:var(--text-secondary);padding:.2rem .4rem;border-radius:4px;cursor:text}
+    .subscription-price:hover{background:var(--bg-secondary)}.subscription-item.selected .subscription-price{color:var(--accent);font-weight:500}
+    .price-input{width:70px;background:var(--bg-primary);border:2px solid var(--accent);border-radius:4px;color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-size:.85rem;padding:.2rem .4rem;text-align:right}
+    .add-custom{display:flex;gap:.4rem;margin-top:.5rem}
+    .add-custom input{flex:1;padding:.6rem .8rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.85rem}
+    .add-custom input:focus{outline:none;border-color:var(--accent)}
+    .add-custom input[type="number"]{width:80px;flex:none;font-family:'JetBrains Mono',monospace}
+    .add-custom button{padding:.6rem 1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:.85rem;cursor:pointer}
+    .add-custom button:hover{background:var(--bg-card-hover);color:var(--text-primary)}
+    .running-total{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(to top,var(--bg-primary) 85%,transparent);padding:1.5rem;z-index:100}
+    .total-card{max-width:680px;margin:0 auto;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;box-shadow:var(--shadow-lg)}
+    .total-label{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em}
+    .total-amounts{display:flex;align-items:baseline;gap:.75rem}
+    .total-monthly{font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:600}
+    .total-monthly span{font-size:.8rem;font-weight:400;color:var(--text-muted)}
+    .total-yearly{font-family:'JetBrains Mono',monospace;font-size:.9rem;color:var(--text-secondary)}
+    .total-yearly span{color:var(--accent);font-weight:600}
+    .continue-btn{padding:.875rem 1.75rem;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:1rem;font-weight:600;cursor:pointer}
+    .continue-btn:hover{background:var(--accent-hover)}.continue-btn:disabled{opacity:.5;cursor:not-allowed}
+    .results{display:none;text-align:center;padding-bottom:8rem}.results.active{display:block}.audit-form.hidden{display:none}
+    .results-icon{width:70px;height:70px;margin:0 auto 1.25rem;background:var(--success-light);border-radius:50%;display:flex;align-items:center;justify-content:center}
+    .results-icon svg{width:35px;height:35px;color:var(--success)}
+    .results h2{font-family:'Instrument Serif',serif;font-size:2rem;font-weight:400;margin-bottom:.4rem}
+    .results-subtitle{color:var(--text-secondary);margin-bottom:1.5rem}
+    
+    /* Stacked Bar Chart Styles */
+    .chart-container{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1.5rem;text-align:left}
+    .chart-title{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:1rem}
+    .chart-total{text-align:center;margin-bottom:1rem}
+    .chart-total-amount{font-family:'JetBrains Mono',monospace;font-size:2rem;font-weight:600;color:var(--text-primary)}
+    .chart-total-amount span{font-size:1rem;color:var(--text-muted);font-weight:400}
+    .chart-total-yearly{font-family:'JetBrains Mono',monospace;font-size:1.1rem;color:var(--accent);font-weight:600}
+    .stacked-bar{display:flex;height:32px;border-radius:8px;overflow:hidden;margin-bottom:1rem}
+    .stacked-segment{height:100%;transition:width .3s ease;position:relative}
+    .stacked-segment:hover{opacity:.85}
+    .chart-legend{display:grid;gap:.5rem}
+    .legend-item{display:flex;align-items:center;justify-content:space-between;padding:.5rem .75rem;background:var(--bg-secondary);border-radius:8px}
+    .legend-left{display:flex;align-items:center;gap:.5rem}
+    .legend-color{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+    .legend-name{font-size:.85rem;font-weight:500}
+    .legend-right{text-align:right}
+    .legend-price{font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:500}
+    .legend-detail{font-size:.7rem;color:var(--text-muted)}
+    
+    .results-breakdown{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1.5rem;text-align:left}
+    .breakdown-row{display:flex;justify-content:space-between;padding:.7rem 0;border-bottom:1px solid var(--border)}
+    .breakdown-row:last-child{border-bottom:none}
+    .breakdown-row.total{padding-top:.875rem;margin-top:.4rem;border-top:2px solid var(--border);border-bottom:none}
+    .breakdown-label{color:var(--text-secondary)}.breakdown-value{font-family:'JetBrains Mono',monospace;font-weight:500}
+    .breakdown-row.total .breakdown-label{color:var(--text-primary);font-weight:600}
+    .breakdown-row.total .breakdown-value{color:var(--accent);font-size:1.1rem;font-weight:600}
+    
+    /* Renewal Date Styles */
+    .renewal-section{background:var(--bg-secondary);border:1px solid var(--border);border-radius:14px;padding:1.5rem;margin-bottom:1.5rem;text-align:left}
+    .renewal-section h3{font-family:'Instrument Serif',serif;font-size:1.3rem;font-weight:400;margin-bottom:.4rem}
+    .renewal-section>p{color:var(--text-secondary);font-size:.9rem;margin-bottom:1rem}
+    .renewal-list{display:grid;gap:.5rem}
+    .renewal-item{display:flex;align-items:center;justify-content:space-between;padding:.6rem .8rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px}
+    .renewal-item-name{font-size:.9rem;font-weight:500}
+    .renewal-item-date{display:flex;align-items:center;gap:.5rem}
+    .renewal-item-date input{padding:.4rem .6rem;background:var(--bg-primary);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:.85rem;width:130px}
+    .renewal-item-date input:focus{outline:none;border-color:var(--accent)}
+    .renewal-skip{font-size:.8rem;color:var(--text-muted);text-align:center;margin-top:.75rem}
+    .renewal-skip a{color:var(--accent);cursor:pointer;text-decoration:none}
+    .renewal-skip a:hover{text-decoration:underline}
+    
+    .email-capture{background:var(--bg-secondary);border:1px solid var(--border);border-radius:14px;padding:1.5rem;margin-bottom:1.5rem}
+    .email-capture h3{font-family:'Instrument Serif',serif;font-size:1.3rem;font-weight:400;margin-bottom:.4rem}
+    .email-capture p{color:var(--text-secondary);font-size:.9rem;margin-bottom:1rem}
+    .email-form{display:flex;gap:.4rem}
+    .email-form input{flex:1;padding:.75rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.95rem}
+    .email-form input:focus{outline:none;border-color:var(--accent)}
+    .email-form button{padding:.75rem 1.25rem;background:var(--accent);border:none;border-radius:8px;color:#fff;font-weight:600;cursor:pointer}
+    .email-form button:hover{background:var(--accent-hover)}.email-form button:disabled{opacity:.7;cursor:not-allowed}
+    .email-success{display:none;color:var(--success);font-weight:500;padding:1rem}.email-success.active{display:block}.email-form.hidden{display:none}
+    .selected-list{text-align:left;margin-top:1.5rem}
+    .selected-list h4{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:.75rem}
+    .selected-item{display:flex;justify-content:space-between;padding:.4rem 0;font-size:.85rem;color:var(--text-secondary)}
+    .selected-item span:last-child{font-family:'JetBrains Mono',monospace}
+    .bottom-spacer{height:130px}
+    @media(max-width:540px){.header h1{font-size:2rem}.total-card{flex-direction:column;text-align:center}.total-amounts{justify-content:center}.continue-btn{width:100%}.email-form{flex-direction:column}.email-form button{width:100%}.add-custom{flex-wrap:wrap}.add-custom input[type="text"]{width:100%}.renewal-item{flex-direction:column;align-items:flex-start;gap:.5rem}.renewal-item-date{width:100%}.renewal-item-date input{flex:1}}
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+    <svg class="sun" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+    <svg class="moon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+  </button>
+  <div class="container">
+    <header class="header">
+      <svg class="logo" viewBox="0 0 1420.8 239.1"><path d="M17.7,1.6h35.7c26,0,41.9,16.8,41.9,42.5s-22.1,57.8-56.6,57.8H0L17.7,1.6ZM38.5,25.8l-9.1,51.9h11.8c18.1,0,28-14.6,28-31.4s-6-20.5-18.9-20.5h-11.8Z"/><path d="M118.5,1.6h25.1l-17.7,100.3h-25.1L118.5,1.6Z"/><path d="M152.4,1.6h26.8l9.1,71.4L222.6,1.6h29.2l-53.4,100.3h-28L152.4,1.6Z"/><path d="M243.4,101.9L261.1,1.6h57.2l-4.3,24.2h-32.1l-2.4,13.4h29.3l-4.3,24.2h-29.3l-2.5,14.3h32.1l-4.3,24.2h-57.2Z"/><path d="M336.3,1.6h35.1c17.4,0,29.9,9.6,29.9,26.1s-10.3,26.1-21.2,29.6c11.4,6.9,13.9,24.2,11.8,44.5h-26.1c2.5-21.2-2.5-35.1-14-35.1h-1.9l-6.2,35.1h-25.1L336.3,1.6ZM368.6,25.8h-11.5l-3,16.8h11.4c5.2,0,9.1-3.8,9.1-10.2s-2.4-6.6-6-6.6Z"/><path d="M488.6,31.1c-5.9-3.5-14.9-6-25.2-6-15.6,0-29.3,13.6-29.3,31.2s7.2,22.1,20.3,22.1,20-6.5,21.8-17.2h-20l4-22.7h45.4c0,.6.1,3.2.1,4.1,0,31.4-19.3,60.9-54.5,60.9s-43.3-18.4-43.3-44.5S433.8,0,466.3,0s19.6,1.5,25.5,4l-3.2,27.1Z"/><path d="M509.2,101.9L526.9,1.6h57.2l-4.3,24.2h-32.1l-2.4,13.4h29.3l-4.3,24.2h-29.3l-2.5,14.3h32.1l-4.3,24.2h-57.2Z"/><path d="M619.1,50.9l-9,51h-25.1l15.3-87.1-4.7-11.5.3-1.6h28l26.2,56.6,10-56.6h25.1l-17.7,100.2h-23.6l-24.9-51h.1Z"/><path d="M717,25.8h-22.3l4.3-24.2h69.6l-4.3,24.2h-22.3l-13.4,76.1h-25.1l13.4-76.1Z"/><path d="M563.3,237l-9.8-69.7-12.2,69.7h-31.4l22.2-125.7h37.3l13.1,85.6,43.3-85.6h40.1l-22.2,125.7h-31.4l12.4-69.9-34.4,69.9h-27Z"/><path d="M745.2,109.3c32.5,0,55.1,23.5,55.1,56.2s-33.7,73.6-72.7,73.6-55.1-23.5-55.1-56.2,33.8-73.6,72.7-73.6ZM730.8,207.6c18.9,0,36.6-17.9,36.6-38.8s-9.8-28.1-25.5-28.1-36.4,18.1-36.4,39,9.8,27.9,25.3,27.9Z"/><path d="M850.4,173.1l-11.3,64h-31.4l19.2-109.3-5.9-14.4.4-2h35.1l32.9,71,12.6-71h31.4l-22.2,125.7h-29.6l-31.2-64Z"/><path d="M936.9,237l22.2-125.7h71.7l-5.4,30.3h-40.3l-3,16.8h36.8l-5.4,30.3h-36.8l-3.1,17.9h40.3l-5.4,30.3h-71.8.2Z"/><path d="M1064.2,183.4l-25.7-72.1h33.8l11.8,41.1,76.2-106.7,22.3,16-87.1,122.1-9.4,53.2h-31.4l9.4-53.6Z"/><path d="M1136.5,206.8c8,0,13.3,5.6,13.3,13.4s-8.7,18.3-18.9,18.3-13.3-5.4-13.3-13.3,8.6-18.4,18.9-18.4Z"/><path d="M1208.3,236.3c-3.8,1.8-9.6,2.4-13.6,2.4-20.3,0-33.6-14-33.6-33.8s18-43.6,44.4-43.6,12.2,1,15.5,2.6l-4.4,25.2c-2.8-2.2-7.5-4.4-13.7-4.4-9.3,0-17,8.4-17,17.7s4.3,12.8,11.5,12.8,11.8-2.2,15.3-4.4l-4.4,25.5Z"/><path d="M1265.7,161.2c19.5,0,33.5,14,33.5,33.8s-19.8,43.6-42.9,43.6-33.5-14.1-33.5-33.9,19.8-43.5,42.9-43.5ZM1258.6,215.2c8.4,0,15.9-8.6,15.9-18s-4.1-12.5-11.1-12.5-16.1,8.4-16.1,17.7,4.1,12.8,11.2,12.8Z"/><path d="M1339.4,170.2c4.7-5.5,9.9-9,18.1-9s17.4,3.8,20.1,11.5c4.9-6.8,11.7-11.5,22.3-11.5s23.3,11.6,20.5,27.1l-8.6,48.6h-24l7.4-41.4c1.2-6.8-1.5-10.9-7.1-10.9s-10,4.1-11.2,10.9l-7.4,41.4h-24l7.4-41.4c1.2-6.8-1.5-10.9-6.8-10.9s-9.7,3.7-11.1,9.9l-7.5,42.5h-24l13.1-74.3h24l-1.2,7.5Z"/><polygon points="1211.3 1.7 1141.7 37.5 1194.3 77.7 1211.3 1.7"/><polygon points="551.1 135.2 550.8 111.3 507.3 110.3 551.1 135.2"/></svg>
+      <h1>Subscription Audit</h1>
+      <p>Find out what you're really spending.</p>
+      <p class="hint">Tap prices to edit • Add your own below each category</p>
+    </header>
+    <div class="progress-bar"><div class="progress-step active"></div><div class="progress-step"></div><div class="progress-step"></div></div>
+    <div class="audit-form" id="auditForm">
+      <div class="category" data-category="streaming"><div class="category-header"><span class="category-title">📺 Streaming</span><span class="category-total">$0/mo</span></div><div class="subscription-grid">
+        <div class="subscription-item" data-name="Netflix" data-price="15.49"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Netflix</div><div class="subscription-desc">Standard</div></div><div class="subscription-price">$15.49</div></div>
+        <div class="subscription-item" data-name="Hulu" data-price="17.99"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Hulu</div><div class="subscription-desc">No ads</div></div><div class="subscription-price">$17.99</div></div>
+        <div class="subscription-item" data-name="Disney+" data-price="13.99"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Disney+</div><div class="subscription-desc">Standard</div></div><div class="subscription-price">$13.99</div></div>
+        <div class="subscription-item" data-name="Max" data-price="15.99"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Max (HBO)</div><div class="subscription-desc">Ad-free</div></div><div class="subscription-price">$15.99</div></div>
+        <div class="subscription-item" data-name="Prime Video" data-price="8.99"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Prime Video</div><div class="subscription-desc">Standalone</div></div><div class="subscription-price">$8.99</div></div>
+        <div class="subscription-item" data-name="Apple TV+" data-price="9.99"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Apple TV+</div><div class="subscription-desc">Monthly</div></div><div class="subscription-price">$9.99</div></div>
+        <div class="subscription-item" data-name="Peacock" data-price="7.99"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Peacock</div><div class="subscription-desc">Premium</div></div><div class="subscription-price">$7.99</div></div>
+        <div class="subscription-item" data-name="Paramount+" data-price="11.99"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Paramount+</div><div class="subscription-desc">With Showtime</div></div><div class="subscription-price">$11.99</div></div>
+        <div class="subscription-item" data-name="YouTube Premium" data-price="13.99"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">YouTube Premium</div><div class="subscription-desc">Individual</div></div><div class="subscription-price">$13.99</div></div>
+      </div><div class="add-custom"><input type="text" placeholder="Other streaming..." class="custom-name"><input type="number" placeholder="$0" step="0.01" min="0" class="custom-price"><button type="button" class="add-custom-btn">Add</button></div></div>
+      <div class="category" data-category="music"><div class="category-header"><span class="category-title">🎵 Music & Audio</span><span class="category-total">$0/mo</span></div><div class="subscription-grid">
+        <div class="subscription-item" data-name="Spotify" data-price="11.99"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Spotify</div><div class="subscription-desc">Individual</div></div><div class="subscription-price">$11.99</div></div>
+        <div class="subscription-item" data-name="Apple Music" data-price="10.99"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Apple Music</div><div class="subscription-desc">Individual</div></div><div class="subscription-price">$10.99</div></div>
+        <div class="subscription-item" data-name="Audible" data-price="14.95"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Audible</div><div class="subscription-desc">1 credit/mo</div></div><div class="subscription-price">$14.95</div></div>
+      </div><div class="add-custom"><input type="text" placeholder="Other music/audio..." class="custom-name"><input type="number" placeholder="$0" step="0.01" min="0" class="custom-price"><button type="button" class="add-custom-btn">Add</button></div></div>
+      <div class="category" data-category="software"><div class="category-header"><span class="category-title">💻 Software & Apps</span><span class="category-total">$0/mo</span></div><div class="subscription-grid">
+        <div class="subscription-item" data-name="Adobe Creative Cloud" data-price="54.99"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Adobe CC</div><div class="subscription-desc">All apps</div></div><div class="subscription-price">$54.99</div></div>
+        <div class="subscription-item" data-name="Microsoft 365" data-price="9.99"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Microsoft 365</div><div class="subscription-desc">Personal</div></div><div class="subscription-price">$9.99</div></div>
+        <div class="subscription-item" data-name="iCloud+" data-price="2.99"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">iCloud+</div><div class="subscription-desc">200GB</div></div><div class="subscription-price">$2.99</div></div>
+        <div class="subscription-item" data-name="ChatGPT Plus" data-price="20.00"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">ChatGPT Plus</div><div class="subscription-desc">OpenAI</div></div><div class="subscription-price">$20.00</div></div>
+        <div class="subscription-item" data-name="Claude Pro" data-price="20.00"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Claude Pro</div><div class="subscription-desc">Anthropic</div></div><div class="subscription-price">$20.00</div></div>
+      </div><div class="add-custom"><input type="text" placeholder="Other software..." class="custom-name"><input type="number" placeholder="$0" step="0.01" min="0" class="custom-price"><button type="button" class="add-custom-btn">Add</button></div></div>
+      <div class="category" data-category="delivery"><div class="category-header"><span class="category-title">📦 Delivery & Shopping</span><span class="category-total">$0/mo</span></div><div class="subscription-grid">
+        <div class="subscription-item" data-name="Amazon Prime" data-price="14.99"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Amazon Prime</div><div class="subscription-desc">Full membership</div></div><div class="subscription-price">$14.99</div></div>
+        <div class="subscription-item" data-name="DashPass" data-price="9.99"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">DashPass</div><div class="subscription-desc">DoorDash</div></div><div class="subscription-price">$9.99</div></div>
+        <div class="subscription-item" data-name="Uber One" data-price="9.99"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Uber One</div><div class="subscription-desc">Eats + Rides</div></div><div class="subscription-price">$9.99</div></div>
+      </div><div class="add-custom"><input type="text" placeholder="Other delivery..." class="custom-name"><input type="number" placeholder="$0" step="0.01" min="0" class="custom-price"><button type="button" class="add-custom-btn">Add</button></div></div>
+      <div class="category" data-category="gaming"><div class="category-header"><span class="category-title">🎮 Gaming</span><span class="category-total">$0/mo</span></div><div class="subscription-grid">
+        <div class="subscription-item" data-name="Xbox Game Pass" data-price="16.99"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Xbox Game Pass</div><div class="subscription-desc">Ultimate</div></div><div class="subscription-price">$16.99</div></div>
+        <div class="subscription-item" data-name="PlayStation Plus" data-price="17.99"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">PlayStation Plus</div><div class="subscription-desc">Premium</div></div><div class="subscription-price">$17.99</div></div>
+        <div class="subscription-item" data-name="Nintendo Online" data-price="3.99"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Nintendo Online</div><div class="subscription-desc">Individual</div></div><div class="subscription-price">$3.99</div></div>
+      </div><div class="add-custom"><input type="text" placeholder="Other gaming..." class="custom-name"><input type="number" placeholder="$0" step="0.01" min="0" class="custom-price"><button type="button" class="add-custom-btn">Add</button></div></div>
+      <div class="category" data-category="fitness"><div class="category-header"><span class="category-title">💪 Health & Fitness</span><span class="category-total">$0/mo</span></div><div class="subscription-grid">
+        <div class="subscription-item" data-name="Gym Membership" data-price="40.00"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Gym Membership</div><div class="subscription-desc">Average</div></div><div class="subscription-price">$40.00</div></div>
+        <div class="subscription-item" data-name="Peloton" data-price="44.00"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Peloton</div><div class="subscription-desc">All-Access</div></div><div class="subscription-price">$44.00</div></div>
+        <div class="subscription-item" data-name="Headspace" data-price="12.99"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Headspace</div><div class="subscription-desc">Monthly</div></div><div class="subscription-price">$12.99</div></div>
+      </div><div class="add-custom"><input type="text" placeholder="Other fitness..." class="custom-name"><input type="number" placeholder="$0" step="0.01" min="0" class="custom-price"><button type="button" class="add-custom-btn">Add</button></div></div>
+      <div class="category" data-category="news"><div class="category-header"><span class="category-title">📰 News & Learning</span><span class="category-total">$0/mo</span></div><div class="subscription-grid">
+        <div class="subscription-item" data-name="NYT" data-price="17.00"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">New York Times</div><div class="subscription-desc">All Access</div></div><div class="subscription-price">$17.00</div></div>
+        <div class="subscription-item" data-name="WSJ" data-price="12.00"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Wall Street Journal</div><div class="subscription-desc">Digital</div></div><div class="subscription-price">$12.00</div></div>
+        <div class="subscription-item" data-name="Duolingo" data-price="12.99"><div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">Duolingo Plus</div><div class="subscription-desc">Super</div></div><div class="subscription-price">$12.99</div></div>
+      </div><div class="add-custom"><input type="text" placeholder="Other news/learning..." class="custom-name"><input type="number" placeholder="$0" step="0.01" min="0" class="custom-price"><button type="button" class="add-custom-btn">Add</button></div></div>
+      <div class="bottom-spacer"></div>
+    </div>
+    <div class="results" id="results">
+      <div class="results-icon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+      <h2>Your Subscription Audit</h2>
+      <p class="results-subtitle">Here's what you're spending</p>
+      
+      <!-- Bar Chart -->
+      <div class="chart-container" id="chartContainer"></div>
+      
+      <!-- Category Breakdown -->
+      <div class="results-breakdown" id="resultsBreakdown"></div>
+      
+      <!-- Optional Renewal Dates -->
+      <div class="renewal-section" id="renewalSection">
+        <h3>Add renewal dates (optional)</h3>
+        <p>Know when these renew? We'll remind you before each one.</p>
+        <div class="renewal-list" id="renewalList"></div>
+        <div class="renewal-skip"><a id="skipRenewals">Skip for now</a> — you can add these later</div>
+      </div>
+      
+      <!-- Email Capture -->
+      <div class="email-capture">
+        <h3>Get your results</h3>
+        <p>We'll email your audit breakdown and remind you before renewals.</p>
+        <form class="email-form" id="emailForm"><input type="email" placeholder="your@email.com" required id="emailInput"><button type="submit">Send Results</button></form>
+        <div class="email-success" id="emailSuccess">✓ Check your inbox for your audit results!</div>
+      </div>
+      <div class="selected-list" id="selectedList"></div>
+    </div>
+  </div>
+  <div class="running-total"><div class="total-card"><div class="total-info"><div class="total-label">Your subscriptions</div><div class="total-amounts"><div class="total-monthly" id="totalMonthly">$0.00<span>/mo</span></div><div class="total-yearly"><span id="totalYearly">$0</span>/yr</div></div></div><button class="continue-btn" id="continueBtn" disabled>See Results</button></div></div>
+  <script>
+    const themeToggle=document.getElementById('themeToggle'),savedTheme=localStorage.getItem('theme')||'dark';
+    document.documentElement.setAttribute('data-theme',savedTheme);
+    themeToggle.onclick=()=>{const t=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',t);localStorage.setItem('theme',t);};
+    let selected=[],catTotals={};
+    const auditForm=document.getElementById('auditForm'),results=document.getElementById('results'),totalMonthly=document.getElementById('totalMonthly'),totalYearly=document.getElementById('totalYearly'),continueBtn=document.getElementById('continueBtn'),resultsBreakdown=document.getElementById('resultsBreakdown'),selectedList=document.getElementById('selectedList'),emailForm=document.getElementById('emailForm'),emailSuccess=document.getElementById('emailSuccess'),progressSteps=document.querySelectorAll('.progress-step'),chartContainer=document.getElementById('chartContainer'),renewalList=document.getElementById('renewalList'),skipRenewals=document.getElementById('skipRenewals');
+    document.querySelectorAll('.category').forEach(c=>catTotals[c.dataset.category]=0);
+    document.querySelectorAll('.subscription-item').forEach(item=>{
+      item.querySelector('.subscription-checkbox').onclick=e=>{e.stopPropagation();toggle(item);};
+      item.querySelector('.subscription-info').onclick=e=>{e.stopPropagation();toggle(item);};
+    });
+    document.querySelectorAll('.subscription-price').forEach(p=>{
+      p.onclick=e=>{
+        e.stopPropagation();const item=p.closest('.subscription-item'),orig=p.textContent,input=document.createElement('input');
+        input.type='number';input.className='price-input';input.value=parseFloat(item.dataset.price).toFixed(2);input.step='0.01';
+        p.textContent='';p.appendChild(input);input.focus();input.select();
+        const save=()=>{const v=parseFloat(input.value)||0;item.dataset.price=v;p.textContent='$'+v.toFixed(2);
+          if(item.classList.contains('selected')){const s=selected.find(x=>x.name===item.dataset.name);if(s){catTotals[s.category]-=s.price;s.price=v;catTotals[s.category]+=v;}update();updateCat(item.closest('.category').dataset.category);}};
+        input.onblur=save;input.onkeydown=e=>{if(e.key==='Enter')input.blur();if(e.key==='Escape')p.textContent=orig;};
+      };
+    });
+    function toggle(item){
+      const name=item.dataset.name,price=parseFloat(item.dataset.price),cat=item.closest('.category').dataset.category;
+      item.classList.toggle('selected');
+      if(item.classList.contains('selected')){selected.push({name,price,category:cat});catTotals[cat]+=price;}
+      else{selected=selected.filter(s=>s.name!==name);catTotals[cat]-=price;}
+      update();updateCat(cat);
+    }
+    document.querySelectorAll('.add-custom-btn').forEach(btn=>{
+      btn.onclick=()=>{
+        const c=btn.closest('.add-custom'),n=c.querySelector('.custom-name'),p=c.querySelector('.custom-price'),cat=btn.closest('.category').dataset.category,name=n.value.trim(),price=parseFloat(p.value);
+        if(name&&price>0){
+          selected.push({name,price,category:cat,custom:true});catTotals[cat]+=price;
+          const grid=btn.closest('.category').querySelector('.subscription-grid'),item=document.createElement('div');
+          item.className='subscription-item selected';item.dataset.name=name;item.dataset.price=price;
+          item.innerHTML=`<div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><div class="subscription-info"><div class="subscription-name">${name}</div><div class="subscription-desc">Custom</div></div><div class="subscription-price">$${price.toFixed(2)}</div>`;
+          item.querySelector('.subscription-checkbox').onclick=e=>{e.stopPropagation();toggle(item);};
+          item.querySelector('.subscription-info').onclick=e=>{e.stopPropagation();toggle(item);};
+          grid.appendChild(item);n.value='';p.value='';update();updateCat(cat);
+        }
+      };
+    });
+    document.querySelectorAll('.add-custom input').forEach(i=>i.onkeypress=e=>{if(e.key==='Enter'){e.preventDefault();i.closest('.add-custom').querySelector('.add-custom-btn').click();}});
+    function updateCat(cat){document.querySelector(`.category[data-category="${cat}"]`).querySelector('.category-total').textContent='$'+catTotals[cat].toFixed(2)+'/mo';}
+    function update(){
+      const m=selected.reduce((a,s)=>a+s.price,0),y=m*12;
+      totalMonthly.innerHTML='$'+m.toFixed(2)+'<span>/mo</span>';totalYearly.textContent='$'+Math.round(y).toLocaleString();
+      continueBtn.disabled=!selected.length;progressSteps[0].classList.toggle('completed',selected.length>0);progressSteps[1].classList.toggle('active',selected.length>0);
+    }
+    continueBtn.onclick=()=>{
+      if(!selected.length)return;
+      const cats={streaming:'📺 Streaming',music:'🎵 Music',software:'💻 Software',delivery:'📦 Delivery',gaming:'🎮 Gaming',fitness:'💪 Fitness',news:'📰 News'};
+      const m=selected.reduce((a,s)=>a+s.price,0),y=m*12;
+      
+      // Color palette for segments
+      const colors=['#d97706','#0891b2','#7c3aed','#dc2626','#16a34a','#db2777','#2563eb','#ca8a04','#64748b','#f97316'];
+      
+      // Build stacked bar chart
+      let chartHtml=`
+        <div class="chart-total">
+          <div class="chart-total-amount">$${m.toFixed(2)}<span>/mo</span></div>
+          <div class="chart-total-yearly">$${Math.round(y).toLocaleString()}/year</div>
+        </div>
+        <div class="stacked-bar">`;
+      
+      // Sort by price descending and build segments
+      const sorted = [...selected].sort((a,b)=>b.price-a.price);
+      sorted.forEach((s,i)=>{
+        const pct=((s.price/m)*100);
+        chartHtml+=`<div class="stacked-segment" style="width:${pct}%;background:${colors[i%colors.length]}" title="${s.name}: $${s.price.toFixed(2)}/mo (${pct.toFixed(0)}%)"></div>`;
+      });
+      
+      chartHtml+=`</div><div class="chart-legend">`;
+      
+      // Legend items
+      sorted.forEach((s,i)=>{
+        const pct=((s.price/m)*100).toFixed(0);
+        const yearly=(s.price*12).toFixed(0);
+        chartHtml+=`
+          <div class="legend-item">
+            <div class="legend-left">
+              <div class="legend-color" style="background:${colors[i%colors.length]}"></div>
+              <span class="legend-name">${s.name}</span>
+            </div>
+            <div class="legend-right">
+              <div class="legend-price">$${s.price.toFixed(2)}/mo</div>
+              <div class="legend-detail">${pct}% · $${yearly}/yr</div>
+            </div>
+          </div>`;
+      });
+      
+      chartHtml+=`</div>`;
+      chartContainer.innerHTML=chartHtml;
+      
+      // Build category breakdown
+      let breakdownHtml='';
+      Object.keys(catTotals).forEach(c=>{if(catTotals[c]>0)breakdownHtml+=`<div class="breakdown-row"><span class="breakdown-label">${cats[c]}</span><span class="breakdown-value">$${catTotals[c].toFixed(2)}/mo</span></div>`;});
+      breakdownHtml+=`<div class="breakdown-row total"><span class="breakdown-label">Annual Total</span><span class="breakdown-value">$${Math.round(y).toLocaleString()}/yr</span></div>`;
+      resultsBreakdown.innerHTML=breakdownHtml;
+      
+      // Build renewal date inputs with validation
+      const today = new Date();
+      const minDate = today.toISOString().split('T')[0];
+      const maxDate = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate()).toISOString().split('T')[0];
+      
+      let renewalHtml='';
+      selected.forEach((s,i)=>{
+        renewalHtml+=`<div class="renewal-item"><span class="renewal-item-name">${s.name}</span><div class="renewal-item-date"><input type="date" data-index="${i}" min="${minDate}" max="${maxDate}" placeholder="Renewal date"></div></div>`;
+      });
+      renewalList.innerHTML=renewalHtml;
+      
+      // Build selected list
+      let listHtml='<h4>Your Subscriptions</h4>';
+      selected.forEach(s=>{listHtml+=`<div class="selected-item"><span>${s.name}</span><span>$${s.price.toFixed(2)}/mo</span></div>`;});
+      selectedList.innerHTML=listHtml;
+      
+      auditForm.classList.add('hidden');results.classList.add('active');progressSteps[1].classList.add('completed');progressSteps[2].classList.add('active');window.scrollTo({top:0,behavior:'smooth'});
+    };
+    
+    skipRenewals.onclick=()=>{document.getElementById('renewalSection').style.display='none';};
+    
+    emailForm.onsubmit=async e=>{
+      e.preventDefault();const email=document.getElementById('emailInput').value,btn=emailForm.querySelector('button'),orig=btn.textContent;
+      btn.disabled=true;btn.textContent='Sending...';
+      
+      // Collect renewal dates
+      document.querySelectorAll('#renewalList input[type="date"]').forEach(input=>{
+        const idx=parseInt(input.dataset.index);
+        if(input.value&&selected[idx]){selected[idx].renewal_date=input.value;}
+      });
+      
+      const m=selected.reduce((a,s)=>a+s.price,0),y=m*12;
+      try{
+        const r=await fetch('/api/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,subscriptions:selected,monthly_total:m,yearly_total:y})});
+        if(!r.ok)throw new Error();
+        emailForm.classList.add('hidden');emailSuccess.classList.add('active');progressSteps[2].classList.add('completed');document.getElementById('renewalSection').style.display='none';
+      }catch(err){btn.disabled=false;btn.textContent=orig;alert('Something went wrong. Please try again.');}
+    };
+  </script>
+</body>
+</html>
