@@ -77,9 +77,6 @@ module.exports = async function handler(req, res) {
     
     const difficultyLabels = { 1: '🟢 Easy', 2: '🟡 Medium', 3: '🔴 Hard' };
 
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_ANON_KEY;
-    
     // Generate unsubscribe token
     const unsubscribe_token = crypto.randomUUID();
     const prices_last_verified = new Date().toISOString();
