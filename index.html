@@ -19,10 +19,14 @@
     [data-theme="dark"] .theme-toggle .sun{display:block}[data-theme="dark"] .theme-toggle .moon{display:none}
     .header{text-align:center;margin-bottom:3rem;padding-top:1rem}
     .logo{height:32px;margin-bottom:2rem}
-    .logo path{fill:var(--accent)}
+    .logo path,.logo polygon{fill:var(--accent)}
     .header h1{font-family:'Instrument Serif',serif;font-size:2.5rem;font-weight:400;margin-bottom:.5rem}
     .header p{color:var(--text-secondary);font-size:1rem}
     .header .hint{font-size:.8rem;color:var(--text-muted);margin-top:.5rem}
+    .currency-selector{display:flex;align-items:center;justify-content:center;gap:.5rem;margin-top:1rem}
+    .currency-selector label{font-size:.85rem;color:var(--text-secondary)}
+    .currency-selector select{padding:.4rem .6rem;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:.85rem;cursor:pointer}
+    .currency-selector select:focus{outline:none;border-color:var(--accent)}
     .progress-bar{display:flex;gap:.5rem;margin-bottom:2rem;max-width:200px;margin-left:auto;margin-right:auto}
     .progress-step{flex:1;height:4px;background:var(--border);border-radius:2px}.progress-step.active,.progress-step.completed{background:var(--accent)}
     .category{margin-bottom:2rem}
@@ -48,8 +52,10 @@
     .add-custom input:focus{outline:none;border-color:var(--accent)}
     .add-custom input[type="number"]{width:80px;flex:none;font-family:'JetBrains Mono',monospace}
     .add-custom select{padding:.6rem .5rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:.85rem;cursor:pointer}
-    .add-custom button{padding:.6rem 1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:.85rem;cursor:pointer}
+    .add-custom button{padding:.6rem 1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:.85rem;cursor:pointer;transition:all .2s}
     .add-custom button:hover{background:var(--bg-card-hover);color:var(--text-primary)}
+    .add-custom button.ready{background:var(--accent);border-color:var(--accent);color:#fff}
+    .add-custom button.ready:hover{background:var(--accent-hover)}
     .running-total{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(to top,var(--bg-primary) 85%,transparent);padding:1.5rem;z-index:100}
     .total-card{max-width:680px;margin:0 auto;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;box-shadow:var(--shadow-lg)}
     .total-label{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em}
@@ -127,6 +133,21 @@
       <h1>Subscription Audit</h1>
       <p>Find out what you're really spending.</p>
       <p class="hint">Tap prices to edit • Toggle monthly/yearly billing</p>
+      <div class="currency-selector">
+        <label for="currencySelect">Currency:</label>
+        <select id="currencySelect">
+          <option value="USD" data-symbol="$">$ USD</option>
+          <option value="EUR" data-symbol="€">€ EUR</option>
+          <option value="GBP" data-symbol="£">£ GBP</option>
+          <option value="CAD" data-symbol="C$">C$ CAD</option>
+          <option value="AUD" data-symbol="A$">A$ AUD</option>
+          <option value="JPY" data-symbol="¥">¥ JPY</option>
+          <option value="INR" data-symbol="₹">₹ INR</option>
+          <option value="MXN" data-symbol="MX$">MX$ MXN</option>
+          <option value="BRL" data-symbol="R$">R$ BRL</option>
+          <option value="CHF" data-symbol="CHF">CHF</option>
+        </select>
+      </div>
     </header>
     <div class="progress-bar"><div class="progress-step active"></div><div class="progress-step"></div><div class="progress-step"></div></div>
     <div class="audit-form" id="auditForm">
@@ -173,10 +194,56 @@
         <div class="renewal-skip"><a id="skipRenewals">Skip for now</a> — you can add these later</div>
       </div>
       <div class="selected-list" id="selectedList"></div>
+      <div style="text-align:center;margin-top:2rem;padding-top:1rem;border-top:1px solid var(--border);">
+        <p style="font-size:.8rem;color:var(--text-muted);">Questions or feedback? <a href="mailto:hello@divergentmoney.com" style="color:var(--accent);">Email us</a></p>
+      </div>
     </div>
   </div>
   <div class="running-total"><div class="total-card"><div class="total-info"><div class="total-label">Your subscriptions</div><div class="total-amounts"><div class="total-monthly" id="totalMonthly">$0.00<span>/mo</span></div><div class="total-yearly"><span id="totalYearly">$0</span>/yr</div></div></div><button class="continue-btn" id="continueBtn" disabled>See Results</button></div></div>
   <script>
+    // Currency handling
+    let currencySymbol = '$';
+    let currencyCode = 'USD';
+    
+    const currencySelect = document.getElementById('currencySelect');
+    currencySelect.addEventListener('change', () => {
+      const option = currencySelect.options[currencySelect.selectedIndex];
+      currencySymbol = option.dataset.symbol;
+      currencyCode = option.value;
+      updateAllPriceDisplays();
+    });
+    
+    function formatPrice(amount) {
+      return currencySymbol + amount.toFixed(2);
+    }
+    
+    function formatPriceInt(amount) {
+      return currencySymbol + Math.round(amount).toLocaleString();
+    }
+    
+    function updateAllPriceDisplays() {
+      // Update subscription prices in the grid
+      document.querySelectorAll('.subscription-item').forEach(item => {
+        const price = parseFloat(item.dataset.price);
+        const priceEl = item.querySelector('.subscription-price');
+        if (priceEl && !priceEl.querySelector('input')) {
+          priceEl.textContent = formatPrice(price);
+        }
+        // Update monthly equiv if yearly
+        const equivEl = item.querySelector('.monthly-equiv');
+        if (equivEl && item.dataset.billing === 'yearly') {
+          equivEl.textContent = formatPrice(price / 12) + '/mo';
+        }
+      });
+      // Update category totals
+      Object.keys(catTotals).forEach(cat => {
+        const catEl = document.querySelector(`.category[data-category="${cat}"] .category-total`);
+        if (catEl) catEl.textContent = formatPrice(catTotals[cat]) + '/mo';
+      });
+      // Update running totals
+      updateTotals();
+    }
+
     // Subscription data with default billing frequency
     const subscriptionData = {
       streaming: [
@@ -240,19 +307,20 @@
 
     let selected=[];
     let catTotals={streaming:0,music:0,software:0,shopping:0,gaming:0,fitness:0,news:0};
+    let priceCorrections={}; // Track user price edits: {serviceName: {original, corrected}}
 
     // Create subscription item HTML
     function createSubItem(sub, cat) {
       const monthlyPrice = sub.billing === 'yearly' ? sub.price / 12 : sub.price;
       const displayPrice = sub.price.toFixed(2);
-      const monthlyEquiv = sub.billing === 'yearly' ? `<div class="monthly-equiv">$${monthlyPrice.toFixed(2)}/mo</div>` : '';
+      const monthlyEquiv = sub.billing === 'yearly' ? `<div class="monthly-equiv">${currencySymbol}${monthlyPrice.toFixed(2)}/mo</div>` : '';
       
       return `
         <div class="subscription-item" data-name="${sub.name}" data-price="${sub.price}" data-billing="${sub.billing}" data-category="${cat}">
           <div class="subscription-checkbox"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div>
           <div class="subscription-info"><div class="subscription-name">${sub.name}</div><div class="subscription-desc">${sub.desc}</div></div>
           <div style="text-align:right">
-            <div class="subscription-price">$${displayPrice}</div>
+            <div class="subscription-price">${currencySymbol}${displayPrice}</div>
             ${monthlyEquiv}
           </div>
           <div class="billing-toggle">
@@ -347,14 +415,14 @@
       });
       catTotals[cat] = total;
       const catEl = document.querySelector(`.category[data-category="${cat}"] .category-total`);
-      if (catEl) catEl.textContent = `$${total.toFixed(2)}/mo`;
+      if (catEl) catEl.textContent = formatPrice(total) + '/mo';
     }
 
     function updateTotals() {
       const m = Object.values(catTotals).reduce((a,b) => a+b, 0);
       const y = m * 12;
-      document.getElementById('totalMonthly').innerHTML = `$${m.toFixed(2)}<span>/mo</span>`;
-      document.getElementById('totalYearly').textContent = `$${Math.round(y).toLocaleString()}`;
+      document.getElementById('totalMonthly').innerHTML = `${formatPrice(m)}<span>/mo</span>`;
+      document.getElementById('totalYearly').textContent = formatPriceInt(y);
       document.getElementById('continueBtn').disabled = selected.length === 0;
       
       const steps = document.querySelectorAll('.progress-step');
@@ -369,6 +437,13 @@
         const priceEl = e.target;
         const item = priceEl.closest('.subscription-item');
         const currentPrice = parseFloat(item.dataset.price);
+        const serviceName = item.dataset.name;
+        const originalPrice = item.dataset.originalPrice ? parseFloat(item.dataset.originalPrice) : currentPrice;
+        
+        // Store original price if not already stored
+        if (!item.dataset.originalPrice) {
+          item.dataset.originalPrice = currentPrice;
+        }
         
         const input = document.createElement('input');
         input.type = 'number';
@@ -384,12 +459,20 @@
         const save = () => {
           const newPrice = parseFloat(input.value) || 0;
           item.dataset.price = newPrice;
-          priceEl.textContent = `$${newPrice.toFixed(2)}`;
+          priceEl.textContent = formatPrice(newPrice);
+          
+          // Track price correction if different from original
+          if (newPrice !== originalPrice) {
+            priceCorrections[serviceName] = {
+              original: originalPrice,
+              corrected: newPrice
+            };
+          }
           
           // Update monthly equiv if yearly
           if (item.dataset.billing === 'yearly') {
             const equivEl = priceEl.parentElement.querySelector('.monthly-equiv');
-            if (equivEl) equivEl.textContent = `$${(newPrice/12).toFixed(2)}/mo`;
+            if (equivEl) equivEl.textContent = formatPrice(newPrice/12) + '/mo';
           }
           
           // Update selected array and totals
@@ -408,6 +491,21 @@
     });
 
     // Add custom subscription
+    document.querySelectorAll('.add-custom').forEach(container => {
+      const nameInput = container.querySelector('.custom-name');
+      const priceInput = container.querySelector('.custom-price');
+      const btn = container.querySelector('.add-custom-btn');
+      
+      const checkReady = () => {
+        const hasName = nameInput.value.trim().length > 0;
+        const hasPrice = parseFloat(priceInput.value) > 0;
+        btn.classList.toggle('ready', hasName && hasPrice);
+      };
+      
+      nameInput.addEventListener('input', checkReady);
+      priceInput.addEventListener('input', checkReady);
+    });
+
     document.querySelectorAll('.add-custom-btn').forEach(btn => {
       btn.onclick = () => {
         const container = btn.closest('.add-custom');
@@ -429,10 +527,11 @@
           const newItem = grid.lastElementChild;
           toggleItem(newItem);
           
-          // Clear inputs
+          // Clear inputs and reset button
           nameInput.value = '';
           priceInput.value = '';
           billingSelect.value = 'monthly';
+          btn.classList.remove('ready');
         }
       };
     });
@@ -460,22 +559,22 @@
       // Build chart
       let chartHtml = `
         <div class="chart-total">
-          <div class="chart-total-amount">$${m.toFixed(2)}<span>/mo</span></div>
-          <div class="chart-total-yearly">$${Math.round(y).toLocaleString()}/year</div>
+          <div class="chart-total-amount">${formatPrice(m)}<span>/mo</span></div>
+          <div class="chart-total-yearly">${formatPriceInt(y)}/year</div>
         </div>
         <div class="stacked-bar">`;
       
       const sorted = [...selected].sort((a,b) => b.monthlyPrice - a.monthlyPrice);
       sorted.forEach((s,i) => {
         const pct = (s.monthlyPrice / m) * 100;
-        chartHtml += `<div class="stacked-segment" style="width:${pct}%;background:${colors[i%colors.length]}" title="${s.name}: $${s.monthlyPrice.toFixed(2)}/mo"></div>`;
+        chartHtml += `<div class="stacked-segment" style="width:${pct}%;background:${colors[i%colors.length]}" title="${s.name}: ${formatPrice(s.monthlyPrice)}/mo"></div>`;
       });
       
       chartHtml += `</div><div class="chart-legend">`;
       sorted.forEach((s,i) => {
         const pct = ((s.monthlyPrice / m) * 100).toFixed(0);
         const yearly = (s.monthlyPrice * 12).toFixed(0);
-        const billingNote = s.billing === 'yearly' ? ` (billed $${s.price}/yr)` : '';
+        const billingNote = s.billing === 'yearly' ? ` (billed ${formatPrice(s.price)}/yr)` : '';
         chartHtml += `
           <div class="legend-item">
             <div class="legend-left">
@@ -483,8 +582,8 @@
               <span class="legend-name">${s.name}</span>
             </div>
             <div class="legend-right">
-              <div class="legend-price">$${s.monthlyPrice.toFixed(2)}/mo</div>
-              <div class="legend-detail">${pct}% · $${yearly}/yr${billingNote}</div>
+              <div class="legend-price">${formatPrice(s.monthlyPrice)}/mo</div>
+              <div class="legend-detail">${pct}% · ${currencySymbol}${yearly}/yr${billingNote}</div>
             </div>
           </div>`;
       });
@@ -496,10 +595,10 @@
       let breakdownHtml = '';
       Object.keys(catTotals).forEach(c => {
         if (catTotals[c] > 0) {
-          breakdownHtml += `<div class="breakdown-row"><span class="breakdown-label">${catNames[c]}</span><span class="breakdown-value">$${catTotals[c].toFixed(2)}/mo</span></div>`;
+          breakdownHtml += `<div class="breakdown-row"><span class="breakdown-label">${catNames[c]}</span><span class="breakdown-value">${formatPrice(catTotals[c])}/mo</span></div>`;
         }
       });
-      breakdownHtml += `<div class="breakdown-row total"><span class="breakdown-label">Annual Total</span><span class="breakdown-value">$${Math.round(y).toLocaleString()}/yr</span></div>`;
+      breakdownHtml += `<div class="breakdown-row total"><span class="breakdown-label">Annual Total</span><span class="breakdown-value">${formatPriceInt(y)}/yr</span></div>`;
       document.getElementById('resultsBreakdown').innerHTML = breakdownHtml;
       
       // Renewal dates
@@ -515,7 +614,7 @@
       // Selected list
       let listHtml = '<h4>Your Subscriptions</h4>';
       selected.forEach(s => {
-        listHtml += `<div class="selected-item"><span>${s.name}</span><span>$${s.monthlyPrice.toFixed(2)}/mo</span></div>`;
+        listHtml += `<div class="selected-item"><span>${s.name}</span><span>${formatPrice(s.monthlyPrice)}/mo</span></div>`;
       });
       document.getElementById('selectedList').innerHTML = listHtml;
       
@@ -570,6 +669,13 @@
       const m = selected.reduce((a,s) => a + s.monthlyPrice, 0);
       const y = m * 12;
       
+      // Build price corrections array for API
+      const corrections = Object.entries(priceCorrections).map(([name, data]) => ({
+        service_name: name,
+        original_price: data.original,
+        corrected_price: data.corrected
+      }));
+      
       try {
         const r = await fetch('/api/submit', {
           method: 'POST',
@@ -578,7 +684,10 @@
             email,
             subscriptions: selected,
             monthly_total: m,
-            yearly_total: y
+            yearly_total: y,
+            currency: currencyCode,
+            currency_symbol: currencySymbol,
+            price_corrections: corrections
           })
         });
         if (!r.ok) throw new Error();
