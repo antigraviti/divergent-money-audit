@@ -27,6 +27,7 @@
     .currency-selector label{font-size:.85rem;color:var(--text-secondary)}
     .currency-selector select{padding:.4rem .6rem;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:.85rem;cursor:pointer}
     .currency-selector select:focus{outline:none;border-color:var(--accent)}
+    .price-disclaimer{font-size:.7rem;color:var(--text-muted);margin-top:.75rem;text-align:center}
     .progress-bar{display:flex;gap:.5rem;margin-bottom:2rem;max-width:200px;margin-left:auto;margin-right:auto}
     .progress-step{flex:1;height:4px;background:var(--border);border-radius:2px}.progress-step.active,.progress-step.completed{background:var(--accent)}
     .category{margin-bottom:2rem}
@@ -148,6 +149,7 @@
           <option value="CHF" data-symbol="CHF">CHF</option>
         </select>
       </div>
+      <p class="price-disclaimer">Prices shown are estimates. Tap any price to update it.</p>
     </header>
     <div class="progress-bar"><div class="progress-step active"></div><div class="progress-step"></div><div class="progress-step"></div></div>
     <div class="audit-form" id="auditForm">
@@ -621,6 +623,11 @@
         listHtml += `<div class="selected-item"><span>${s.name}</span><span>${formatPrice(s.monthlyPrice)}/mo</span></div>`;
       });
       document.getElementById('selectedList').innerHTML = listHtml;
+      
+      // Lock currency selector
+      currencySelect.disabled = true;
+      currencySelect.style.opacity = '0.5';
+      currencySelect.title = 'Refresh page to change currency';
       
       document.getElementById('auditForm').classList.add('hidden');
       document.getElementById('results').classList.add('active');
