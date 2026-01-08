@@ -105,7 +105,7 @@
     .renewal-skip{font-size:.8rem;color:var(--text-muted);text-align:center;margin-top:.75rem}
     .renewal-skip a{color:var(--accent);cursor:pointer;text-decoration:none}
     .renewal-skip a:hover{text-decoration:underline}
-    .email-capture{background:var(--bg-secondary);border:1px solid var(--border);border-radius:14px;padding:1.5rem;margin-bottom:1.5rem}
+    .email-capture{background:var(--bg-secondary);border:2px solid var(--accent);border-radius:14px;padding:1.5rem;margin-bottom:1.5rem}
     .email-capture h3{font-family:'Instrument Serif',serif;font-size:1.3rem;font-weight:400;margin-bottom:.4rem}
     .email-capture p{color:var(--text-secondary);font-size:.9rem;margin-bottom:1rem}
     .email-form{display:flex;gap:.4rem}
@@ -211,6 +211,9 @@
       currencySymbol = option.dataset.symbol;
       currencyCode = option.value;
       updateAllPriceDisplays();
+      // Brief visual feedback
+      currencySelect.style.borderColor = 'var(--accent)';
+      setTimeout(() => currencySelect.style.borderColor = '', 300);
     });
     
     function formatPrice(amount) {
@@ -220,6 +223,11 @@
     function formatPriceInt(amount) {
       return currencySymbol + Math.round(amount).toLocaleString();
     }
+    
+    // State variables - must be defined before functions that use them
+    let selected=[];
+    let catTotals={streaming:0,music:0,software:0,shopping:0,gaming:0,fitness:0,news:0};
+    let priceCorrections={}; // Track user price edits: {serviceName: {original, corrected}}
     
     function updateAllPriceDisplays() {
       // Update subscription prices in the grid
@@ -304,10 +312,6 @@
     const savedTheme=localStorage.getItem('theme')||'dark';
     document.documentElement.setAttribute('data-theme',savedTheme);
     themeToggle.onclick=()=>{const t=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',t);localStorage.setItem('theme',t);};
-
-    let selected=[];
-    let catTotals={streaming:0,music:0,software:0,shopping:0,gaming:0,fitness:0,news:0};
-    let priceCorrections={}; // Track user price edits: {serviceName: {original, corrected}}
 
     // Create subscription item HTML
     function createSubItem(sub, cat) {
